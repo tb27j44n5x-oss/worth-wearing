@@ -1,0 +1,29 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string",
+      "default": "Norway"
+    },
+    "saved_brands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "saved_reports": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notification_preferences": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

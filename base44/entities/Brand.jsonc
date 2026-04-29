@@ -1,0 +1,72 @@
+{
+  "name": "Brand",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "size_estimate": {
+      "type": "string",
+      "enum": [
+        "small",
+        "medium",
+        "large",
+        "niche"
+      ]
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": "string"
+    },
+    "claimed_values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "archived"
+      ],
+      "default": "pending"
+    },
+    "is_small_brand_spotlight": {
+      "type": "boolean",
+      "default": false
+    },
+    "spotlight_reason": {
+      "type": "string"
+    },
+    "last_researched_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_refresh_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "suggested_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

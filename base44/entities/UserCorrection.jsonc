@@ -1,0 +1,51 @@
+{
+  "name": "UserCorrection",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "report_id": {
+      "type": "string"
+    },
+    "correction_type": {
+      "type": "string",
+      "enum": [
+        "new_brand",
+        "missing_category",
+        "report_correction",
+        "new_source",
+        "repair_experience",
+        "quality_experience"
+      ]
+    },
+    "note": {
+      "type": "string"
+    },
+    "submitted_source_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "admin_notes": {
+      "type": "string"
+    },
+    "submitter_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "correction_type",
+    "note"
+  ]
+}

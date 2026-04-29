@@ -1,0 +1,166 @@
+{
+  "name": "BrandCategoryReport",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "overall_grade": {
+      "type": "string",
+      "enum": [
+        "A+",
+        "A",
+        "A-",
+        "B+",
+        "B",
+        "B-",
+        "C+",
+        "C",
+        "C-",
+        "D",
+        "F"
+      ]
+    },
+    "evidence_confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ]
+    },
+    "material_score": {
+      "type": "number"
+    },
+    "transparency_score": {
+      "type": "number"
+    },
+    "climate_score": {
+      "type": "number"
+    },
+    "worker_score": {
+      "type": "number"
+    },
+    "repair_score": {
+      "type": "number"
+    },
+    "durability_score": {
+      "type": "number"
+    },
+    "circularity_score": {
+      "type": "number"
+    },
+    "consumption_model_score": {
+      "type": "number"
+    },
+    "short_summary": {
+      "type": "string"
+    },
+    "standout_practices": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendation": {
+      "type": "string"
+    },
+    "material_argument": {
+      "type": "string"
+    },
+    "transparency_argument": {
+      "type": "string"
+    },
+    "climate_argument": {
+      "type": "string"
+    },
+    "worker_argument": {
+      "type": "string"
+    },
+    "repair_argument": {
+      "type": "string"
+    },
+    "durability_argument": {
+      "type": "string"
+    },
+    "circularity_argument": {
+      "type": "string"
+    },
+    "consumption_argument": {
+      "type": "string"
+    },
+    "country_context": {
+      "type": "string"
+    },
+    "shipping_origin": {
+      "type": "string"
+    },
+    "second_hand_notes": {
+      "type": "string"
+    },
+    "repair_warranty_review": {
+      "type": "string"
+    },
+    "quality_durability_review": {
+      "type": "string"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "version": {
+      "type": "number",
+      "default": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "admin_notes": {
+      "type": "string"
+    },
+    "last_researched_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_refresh_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "brand_id",
+    "category"
+  ]
+}
