@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight, Leaf, Shield, Wrench, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
+
+const ROTATING_WORDS = ["jacket", "wetsuit", "hoodie", "t-shirt", "jeans", "brand"];
 
 const EXAMPLES = [
   "waterproof shell jacket",
@@ -20,7 +22,15 @@ const FEATURES = [
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
   const [country, setCountry] = useState("Norway");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex(i => (i + 1) % ROTATING_WORDS.length);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, []);
   const [preference, setPreference] = useState("either");
   const [budget, setBudget] = useState("mid");
   const navigate = useNavigate();
@@ -49,7 +59,9 @@ export default function SearchPage() {
 
           <h1 className="font-playfair text-5xl md:text-6xl font-bold text-foreground leading-[1.1] mb-5">
             Find a better<br />
-            <span className="text-primary italic">jacket brand.</span>
+            <span className="text-primary italic" key={wordIndex} style={{ animation: "fadeUp 0.4s ease-out" }}>
+              {ROTATING_WORDS[wordIndex]} brand.
+            </span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10">
