@@ -1,0 +1,62 @@
+{
+  "name": "RecommendationSet",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string"
+    },
+    "normalized_query": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "country_context": {
+      "type": "string"
+    },
+    "summary_verdict": {
+      "type": "string"
+    },
+    "confidence_level": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ],
+      "default": "unknown"
+    },
+    "best_overall_brand_id": {
+      "type": "string"
+    },
+    "best_durability_brand_id": {
+      "type": "string"
+    },
+    "best_transparency_brand_id": {
+      "type": "string"
+    },
+    "best_secondhand_brand_id": {
+      "type": "string"
+    },
+    "biggest_unknown_brand_id": {
+      "type": "string"
+    },
+    "result_json": {
+      "type": "string",
+      "description": "Full serialized recommendation contract JSON"
+    },
+    "is_ai_unreviewed": {
+      "type": "boolean",
+      "default": true
+    },
+    "last_used_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "query",
+    "category_key"
+  ]
+}

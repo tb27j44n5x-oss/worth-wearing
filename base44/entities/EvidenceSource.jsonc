@@ -1,0 +1,67 @@
+{
+  "name": "EvidenceSource",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "insight_id": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "source_title": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "brand_owned",
+        "third_party",
+        "news",
+        "forum",
+        "certification",
+        "academic",
+        "unknown"
+      ]
+    },
+    "claim_type": {
+      "type": "string"
+    },
+    "source_owner": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "supports_what": {
+      "type": "string"
+    },
+    "reliability_score": {
+      "type": "number"
+    },
+    "is_brand_owned": {
+      "type": "boolean",
+      "default": false
+    },
+    "date_accessed": {
+      "type": "string",
+      "format": "date"
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "brand_id",
+    "category_key"
+  ]
+}

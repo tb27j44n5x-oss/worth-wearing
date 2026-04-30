@@ -5,11 +5,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import Home from './pages/Home';
-import SearchResults from './pages/SearchResults';
-import BrandReport from './pages/BrandReport';
-import Compare from './pages/Compare';
-import Discover from './pages/Discover';
+import SearchPage from './pages/SearchPage';
+import RecommendationResult from './pages/RecommendationResult';
 import Suggest from './pages/Suggest';
 import Admin from './pages/Admin';
 
@@ -35,11 +32,8 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/search" element={<SearchResults />} />
-      <Route path="/brand/:brandName" element={<BrandReport />} />
-      <Route path="/compare" element={<Compare />} />
-      <Route path="/discover" element={<Discover />} />
+      <Route path="/" element={<SearchPage />} />
+      <Route path="/recommendation" element={<RecommendationResult />} />
       <Route path="/suggest" element={<Suggest />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="*" element={<PageNotFound />} />

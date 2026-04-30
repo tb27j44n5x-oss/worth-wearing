@@ -1,0 +1,51 @@
+{
+  "name": "ResearchRun",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string"
+    },
+    "normalized_query": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "country_context": {
+      "type": "string"
+    },
+    "brands_considered": {
+      "type": "number"
+    },
+    "brands_returned": {
+      "type": "number"
+    },
+    "model_used": {
+      "type": "string"
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "raw_ai_output": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ],
+      "default": "running"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "query"
+  ]
+}

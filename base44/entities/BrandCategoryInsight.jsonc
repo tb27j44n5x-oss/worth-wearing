@@ -1,0 +1,134 @@
+{
+  "name": "BrandCategoryInsight",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "published",
+        "archived",
+        "needs_refresh"
+      ],
+      "default": "draft"
+    },
+    "is_current": {
+      "type": "boolean",
+      "default": true
+    },
+    "overall_score": {
+      "type": "number"
+    },
+    "durability_score": {
+      "type": "number"
+    },
+    "transparency_score": {
+      "type": "number"
+    },
+    "repairability_score": {
+      "type": "number"
+    },
+    "secondhand_score": {
+      "type": "number"
+    },
+    "material_score": {
+      "type": "number"
+    },
+    "manufacturing_clarity_score": {
+      "type": "number"
+    },
+    "confidence_level": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ],
+      "default": "unknown"
+    },
+    "best_for_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. ['durability', 'transparency', 'secondhand']"
+    },
+    "summary_verdict": {
+      "type": "string"
+    },
+    "durability_notes": {
+      "type": "string"
+    },
+    "transparency_notes": {
+      "type": "string"
+    },
+    "repair_notes": {
+      "type": "string"
+    },
+    "secondhand_notes": {
+      "type": "string"
+    },
+    "manufacturing_summary": {
+      "type": "string"
+    },
+    "known_manufacturing_countries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "main_unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "main_concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommended_buying_route": {
+      "type": "string",
+      "enum": [
+        "buy_new",
+        "buy_secondhand",
+        "research_further"
+      ]
+    },
+    "website": {
+      "type": "string"
+    },
+    "product_url": {
+      "type": "string"
+    },
+    "last_researched_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_refresh_due": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "brand_id",
+    "category_key"
+  ]
+}

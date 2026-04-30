@@ -1,0 +1,29 @@
+{
+  "name": "ProductCategory",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Normalized category key, e.g. waterproof_shell_jacket"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable category name"
+    },
+    "parent_category": {
+      "type": "string",
+      "description": "Parent category key, e.g. outerwear"
+    },
+    "description": {
+      "type": "string"
+    },
+    "research_rubric": {
+      "type": "string",
+      "description": "Guidance for the AI on what to focus on when researching this category"
+    }
+  },
+  "required": [
+    "key",
+    "name"
+  ]
+}
