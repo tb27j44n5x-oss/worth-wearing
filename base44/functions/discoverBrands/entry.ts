@@ -23,6 +23,10 @@ For each brand, assess its likely sustainability profile based on what you know 
 
 User is located in: ${user_country || 'Norway'}
 
+Also generate:
+1. Direct product links: real URLs where the user can find/buy the specific product they searched for (both new and second-hand)
+2. Second-hand platform links with real pre-filled search URLs for the exact product query
+
 OUTPUT JSON:
 {
   "search_query": string,
@@ -44,13 +48,22 @@ OUTPUT JSON:
       "is_small_brand_spotlight": boolean,
       "spotlight_reason": string,
       "result_group": "lower_impact"|"small_discovery"|"second_hand_first"|"repairable_durable"|"caution",
-      "shipping_origin": string
+      "shipping_origin": string,
+      "product_search_url": string (direct URL to the brand's own website search/category page for this exact product type, e.g. "https://brand.com/collections/wetsuits")
+    }
+  ],
+  "new_product_links": [
+    {
+      "store": string (shop name),
+      "url": string (direct search URL for this product on the store),
+      "note": string (e.g. "curated sustainable retailers", "ships to Norway"),
+      "is_sustainable_retailer": boolean
     }
   ],
   "second_hand_suggestions": [
     {
       "platform": string,
-      "search_url": string,
+      "search_url": string (pre-filled search URL for the exact product query),
       "note": string
     }
   ]
@@ -86,7 +99,20 @@ OUTPUT JSON:
               is_small_brand_spotlight: { type: 'boolean' },
               spotlight_reason: { type: 'string' },
               result_group: { type: 'string' },
-              shipping_origin: { type: 'string' }
+              shipping_origin: { type: 'string' },
+              product_search_url: { type: 'string' }
+            }
+          }
+        },
+        new_product_links: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              store: { type: 'string' },
+              url: { type: 'string' },
+              note: { type: 'string' },
+              is_sustainable_retailer: { type: 'boolean' }
             }
           }
         },
