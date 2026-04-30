@@ -4,16 +4,18 @@ import NavBar from "@/components/NavBar";
 import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminReports from "@/components/admin/AdminReports";
 import AdminResearch from "@/components/admin/AdminResearch";
-import { ClipboardList, FileText, Search } from "lucide-react";
+import AdminReviewQueue from "@/components/admin/AdminReviewQueue";
+import { ClipboardList, FileText, Search, Inbox } from "lucide-react";
 
 const TABS = [
+  { id: "review", label: "Review Queue", icon: Inbox },
   { id: "research", label: "AI Research", icon: Search },
   { id: "reports", label: "Reports", icon: FileText },
   { id: "suggestions", label: "Suggestions", icon: ClipboardList },
 ];
 
 export default function Admin() {
-  const [tab, setTab] = useState("research");
+  const [tab, setTab] = useState("review");
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function Admin() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-muted rounded-xl p-1 mb-8 max-w-sm">
+        <div className="flex gap-1 bg-muted rounded-xl p-1 mb-8 max-w-lg">
           {TABS.map(({ id, label, icon: TabIcon }) => (
             <button
               key={id}
@@ -56,6 +58,7 @@ export default function Admin() {
           ))}
         </div>
 
+        {tab === "review" && <AdminReviewQueue />}
         {tab === "research" && <AdminResearch />}
         {tab === "reports" && <AdminReports />}
         {tab === "suggestions" && <AdminSuggestions />}
