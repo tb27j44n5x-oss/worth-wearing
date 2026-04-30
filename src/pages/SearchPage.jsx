@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight, Leaf, Shield, Wrench, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 
-const ROTATING_WORDS = ["jacket", "wetsuit", "hoodie", "t-shirt", "jeans", "brand"];
+const ROTATING_WORDS = ["jacket", "wetsuit", "hoodie", "t-shirt", "jeans"];
 
 const EXAMPLES = [
   "waterproof shell jacket",
