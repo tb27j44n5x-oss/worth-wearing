@@ -23,9 +23,9 @@ For each brand, assess its likely sustainability profile based on what you know 
 
 User is located in: ${user_country || 'Norway'}
 
-Also generate:
-1. Direct product links: real URLs where the user can find/buy the specific product they searched for (both new and second-hand)
-2. Second-hand platform links with real pre-filled search URLs for the exact product query
+ALSO FIND:
+- Direct product links (URLs) to the actual specific product pages that match "${query}" on each brand's website (e.g. link to the exact product page, not just the homepage). Only include links you are confident are real and specific to the product.
+- Second-hand product listings: find direct search URLs for "${query}" on second-hand platforms relevant to ${user_country || 'Norway'} such as Finn.no, eBay, Vinted, Facebook Marketplace, Tradera, Blocket, DBA. The URL should have the search query pre-filled so the user lands on relevant results.
 
 OUTPUT JSON:
 {
@@ -49,21 +49,22 @@ OUTPUT JSON:
       "spotlight_reason": string,
       "result_group": "lower_impact"|"small_discovery"|"second_hand_first"|"repairable_durable"|"caution",
       "shipping_origin": string,
-      "product_search_url": string (direct URL to the brand's own website search/category page for this exact product type, e.g. "https://brand.com/collections/wetsuits")
+      "product_url": string (direct URL to the specific product matching the search on this brand's site, or empty string if not found)
     }
   ],
-  "new_product_links": [
+  "product_links": [
     {
-      "store": string (shop name),
-      "url": string (direct search URL for this product on the store),
-      "note": string (e.g. "curated sustainable retailers", "ships to Norway"),
-      "is_sustainable_retailer": boolean
+      "brand": string,
+      "product_name": string,
+      "url": string,
+      "price_approx": string,
+      "note": string
     }
   ],
-  "second_hand_suggestions": [
+  "second_hand_links": [
     {
       "platform": string,
-      "search_url": string (pre-filled search URL for the exact product query),
+      "search_url": string,
       "note": string
     }
   ]
@@ -100,23 +101,24 @@ OUTPUT JSON:
               spotlight_reason: { type: 'string' },
               result_group: { type: 'string' },
               shipping_origin: { type: 'string' },
-              product_search_url: { type: 'string' }
+              product_url: { type: 'string' }
             }
           }
         },
-        new_product_links: {
+        product_links: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              store: { type: 'string' },
+              brand: { type: 'string' },
+              product_name: { type: 'string' },
               url: { type: 'string' },
-              note: { type: 'string' },
-              is_sustainable_retailer: { type: 'boolean' }
+              price_approx: { type: 'string' },
+              note: { type: 'string' }
             }
           }
         },
-        second_hand_suggestions: {
+        second_hand_links: {
           type: 'array',
           items: {
             type: 'object',

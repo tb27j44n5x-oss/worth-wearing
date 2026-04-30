@@ -67,18 +67,26 @@ export default function BrandCard({ brand }) {
             <ShoppingBag size={12} /> Available second-hand
           </span>
         )}
-        {brand.website && (
-          <a href={brand.website} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-auto transition-colors">
-            Website <ExternalLink size={11} />
-          </a>
-        )}
-        <Link
-          to={`/brand/${encodeURIComponent(brand.name)}?website=${encodeURIComponent(brand.website || '')}`}
-          className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-        >
-          View full report <ArrowRight size={12} />
-        </Link>
+        <div className="flex items-center gap-3 ml-auto flex-wrap">
+          {brand.product_url && (
+            <a href={brand.product_url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-lg transition-colors">
+              Buy <ExternalLink size={11} />
+            </a>
+          )}
+          {brand.website && (
+            <a href={brand.website} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Website <ExternalLink size={11} />
+            </a>
+          )}
+          <Link
+            to={`/brand/${encodeURIComponent(brand.name)}?website=${encodeURIComponent(brand.website || '')}`}
+            className="flex items-center gap-1 text-xs font-medium text-foreground hover:text-primary transition-colors"
+          >
+            Full report <ArrowRight size={12} />
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import NavBar from "@/components/NavBar";
 import BrandCard from "@/components/BrandCard";
-import { Loader2, ShoppingBag, ExternalLink, Tag, Store } from "lucide-react";
+import { Loader2, ShoppingBag, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 
 const GROUP_ORDER = ["lower_impact", "small_discovery", "second_hand_first", "repairable_durable", "caution"];
@@ -93,44 +93,39 @@ export default function SearchResults() {
               );
             })}
 
-            {/* Buy new — direct product links */}
-            {data.new_product_links?.length > 0 && (
+            {/* Direct product links */}
+            {data.product_links?.length > 0 && (
               <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border pt-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <Store size={18} className="text-primary" />
-                  <h2 className="font-playfair text-2xl font-semibold text-foreground">Find "{query}" new</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-5">Direct links to search for this product. Sustainable retailers marked separately.</p>
-                <div className="flex flex-wrap gap-3">
-                  {data.new_product_links.map((s, i) => (
-                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                      className={`flex items-center gap-2 bg-card border rounded-xl px-4 py-3 text-sm hover:shadow-sm transition-all ${s.is_sustainable_retailer ? "border-primary/40 hover:border-primary" : "border-border hover:border-primary/30"}`}>
-                      {s.is_sustainable_retailer ? <Tag size={14} className="text-primary" /> : <Store size={14} className="text-muted-foreground" />}
-                      <span className="font-medium text-foreground">{s.store}</span>
-                      {s.is_sustainable_retailer && <span className="text-xs text-primary font-medium">sustainable</span>}
-                      {s.note && <span className="text-muted-foreground text-xs hidden sm:inline">— {s.note}</span>}
-                      <ExternalLink size={12} className="text-muted-foreground" />
+                <h2 className="font-playfair text-2xl font-semibold text-foreground mb-2">Buy new — direct product links</h2>
+                <p className="text-sm text-muted-foreground mb-5">Links to specific products matching your search on each brand's website.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {data.product_links.map((p, i) => (
+                    <a key={i} href={p.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-start gap-3 bg-card border border-border rounded-xl px-4 py-3 hover:border-primary/40 hover:shadow-sm transition-all group">
+                      <ExternalLink size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{p.product_name}</p>
+                        <p className="text-xs text-muted-foreground">{p.brand}{p.price_approx ? ` · ${p.price_approx}` : ""}</p>
+                        {p.note && <p className="text-xs text-muted-foreground mt-0.5">{p.note}</p>}
+                      </div>
                     </a>
                   ))}
                 </div>
               </motion.section>
             )}
 
-            {/* Second-hand suggestions */}
-            {data.second_hand_suggestions?.length > 0 && (
+            {/* Second-hand links */}
+            {data.second_hand_links?.length > 0 && (
               <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border pt-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingBag size={18} className="text-amber-600" />
-                  <h2 className="font-playfair text-2xl font-semibold text-foreground">Find "{query}" second-hand</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-5">Pre-filled searches for this exact product on second-hand platforms.</p>
+                <h2 className="font-playfair text-2xl font-semibold text-foreground mb-2">Buy second-hand</h2>
+                <p className="text-sm text-muted-foreground mb-5">Search results pre-filled with your query on second-hand platforms.</p>
                 <div className="flex flex-wrap gap-3">
-                  {data.second_hand_suggestions.map((s, i) => (
+                  {data.second_hand_links.map((s, i) => (
                     <a key={i} href={s.search_url} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm hover:border-amber-400 hover:shadow-sm transition-all">
-                      <ShoppingBag size={14} className="text-amber-600" />
+                      <ShoppingBag size={14} className="text-amber-700" />
                       <span className="font-medium text-amber-900">{s.platform}</span>
-                      {s.note && <span className="text-amber-700 text-xs hidden sm:inline">— {s.note}</span>}
+                      {s.note && <span className="text-amber-700 text-xs">— {s.note}</span>}
                       <ExternalLink size={12} className="text-amber-600" />
                     </a>
                   ))}
