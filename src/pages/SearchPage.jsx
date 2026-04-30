@@ -60,7 +60,7 @@ export default function SearchPage() {
           <h1 className="font-playfair text-5xl md:text-6xl font-bold text-foreground leading-[1.1] mb-5">
             Find a better<br />
             <span className="text-primary italic" key={wordIndex} style={{ animation: "fadeUp 0.4s ease-out" }}>
-              {ROTATING_WORDS[wordIndex]} brand.
+              {ROTATING_WORDS[wordIndex]}.
             </span>
           </h1>
 
