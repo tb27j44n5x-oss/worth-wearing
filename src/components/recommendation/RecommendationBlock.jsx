@@ -1,4 +1,4 @@
-import { ExternalLink, ShoppingBag, HelpCircle, ArrowRight } from "lucide-react";
+import { ExternalLink, HelpCircle, FileText } from "lucide-react";
 
 const CONFIDENCE_STYLES = {
   high:    "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -7,24 +7,31 @@ const CONFIDENCE_STYLES = {
   unknown: "bg-muted text-muted-foreground border-border",
 };
 
-const ROUTE_LABELS = {
-  buy_new:          { label: "Buy new", className: "text-primary bg-primary/10" },
-  buy_secondhand:   { label: "Buy second-hand", className: "text-amber-700 bg-amber-50" },
-  research_further: { label: "Research further", className: "text-muted-foreground bg-muted" },
+const ROUTE_CONFIG = {
+  buy_new:          { label: "Buy new",          className: "text-primary bg-primary/10 border-primary/20" },
+  buy_secondhand:   { label: "Buy second-hand",  className: "text-amber-700 bg-amber-50 border-amber-200" },
+  research_further: { label: "Research further", className: "text-muted-foreground bg-muted border-border" },
 };
 
 export default function RecommendationBlock({ block, label, highlight, icon, fullWidth }) {
   if (!block) return null;
 
   const confidenceStyle = CONFIDENCE_STYLES[block.evidence_confidence] || CONFIDENCE_STYLES.unknown;
-  const route = ROUTE_LABELS[block.recommended_buying_route];
+  const route = ROUTE_CONFIG[block.recommended_buying_route];
+  const isSecondhand = icon === "secondhand";
+  const isUnknown = icon === "unknown";
 
   return (
-    <div className={`bg-card border rounded-2xl p-6 space-y-4 ${highlight ? "border-primary/40 ring-1 ring-primary/20" : "border-border"} ${fullWidth ? "md:col-span-2" : ""}`}>
+    <div className={`bg-card border rounded-2xl p-6 space-y-4 flex flex-col
+      ${highlight ? "border-primary/40 ring-1 ring-primary/20" : "border-border"}
+      ${fullWidth ? "md:col-span-2" : ""}
+    `}>
       {/* Label + confidence */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${isUnknown ? "text-muted-foreground" : isSecondhand ? "text-amber-700" : highlight ? "text-primary" : "text-muted-foreground"}`}>
+            {label}
+          </p>
           <h3 className="font-playfair text-xl font-bold text-foreground">{block.brand_name}</h3>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${confidenceStyle} flex-shrink-0`}>
@@ -33,18 +40,30 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
       </div>
 
       {/* Verdict */}
-      <p className="text-sm text-foreground leading-relaxed font-medium">{block.verdict}</p>
+      <p className="text-sm text-foreground leading-relaxed">{block.verdict}</p>
 
       {/* Why chosen */}
-      {block.why_chosen && (
+      {block.why_chosen && !isUnknown && (
         <p className="text-sm text-muted-foreground leading-relaxed">{block.why_chosen}</p>
+      )}
+
+      {/* Second-hand specific advice */}
+      {isSecondhand && (block.secondhand_why || block.secondhand_tips) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1.5">
+          {block.secondhand_why && (
+            <p className="text-xs font-medium text-amber-800">{block.secondhand_why}</p>
+          )}
+          {block.secondhand_tips && (
+            <p className="text-xs text-amber-700 leading-snug">Tip: {block.secondhand_tips}</p>
+          )}
+        </div>
       )}
 
       {/* Known / Unknown */}
       <div className="space-y-2">
         {block.main_known_evidence && (
           <div className="flex items-start gap-2">
-            <span className="text-xs font-medium text-emerald-700 mt-0.5 flex-shrink-0">✓ Known:</span>
+            <span className="text-xs font-semibold text-emerald-700 mt-0.5 flex-shrink-0">✓ Known:</span>
             <span className="text-xs text-foreground leading-snug">{block.main_known_evidence}</span>
           </div>
         )}
@@ -56,10 +75,32 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
         )}
       </div>
 
+      {/* Evidence snippets */}
+      {block.evidence_snippets?.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <FileText size={11} />
+            Evidence
+          </div>
+          {block.evidence_snippets.map((snippet, i) => (
+            <p key={i} className="text-xs text-muted-foreground leading-snug pl-4 border-l-2 border-border">
+              {snippet}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* Biggest unknown — why this brand is still interesting */}
+      {isUnknown && block.why_chosen && (
+        <div className="bg-muted rounded-xl p-3">
+          <p className="text-xs text-muted-foreground leading-snug">{block.why_chosen}</p>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="flex items-center gap-3 pt-2 border-t border-border flex-wrap">
+      <div className="flex items-center gap-3 pt-2 border-t border-border flex-wrap mt-auto">
         {route && (
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${route.className}`}>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${route.className}`}>
             {route.label}
           </span>
         )}

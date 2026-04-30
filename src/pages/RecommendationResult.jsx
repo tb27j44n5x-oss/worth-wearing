@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, HelpCircle, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import RecommendationBlock from "@/components/recommendation/RecommendationBlock";
 import DetailedTable from "@/components/recommendation/DetailedTable";
 import SummaryHeader from "@/components/recommendation/SummaryHeader";
+import SecondHandSection from "@/components/recommendation/SecondHandSection";
 
 export default function RecommendationResult() {
   const [searchParams] = useSearchParams();
@@ -50,9 +51,9 @@ export default function RecommendationResult() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Loader2 className="animate-spin text-primary mb-4" size={36} />
-            <p className="font-playfair text-xl text-foreground mb-2">Finding the best options...</p>
+            <p className="font-playfair text-xl text-foreground mb-2">Researching brands...</p>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Checking our research database and evaluating brands on durability, transparency, repairability, and more.
+              Looking for solid evidence — not just marketing claims. This takes a moment.
             </p>
           </div>
         )}
@@ -95,6 +96,9 @@ export default function RecommendationResult() {
               )}
             </div>
 
+            {/* Second-hand section */}
+            <SecondHandSection result={result} />
+
             {/* Detailed table */}
             {result.detailed_table?.length > 0 && (
               <DetailedTable rows={result.detailed_table} />
@@ -110,8 +114,11 @@ export default function RecommendationResult() {
 
             {/* Unreviewed notice */}
             {result.is_cached === false && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
-                This recommendation is freshly AI-generated and has not yet been reviewed by our team. Treat it as a starting point, not a final verdict.
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+                <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 leading-relaxed">
+                  This is freshly AI-generated research that has not yet been reviewed by our team. We have tried to be careful, but treat it as a starting point — not a final verdict.
+                </p>
               </div>
             )}
 

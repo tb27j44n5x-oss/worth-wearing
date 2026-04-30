@@ -78,18 +78,29 @@ IMPORTANT SCORING RULES:
 - A brand with excellent durability evidence but weak transparency gets high durability, low transparency.
 - "recommended_buying_route": "buy_new" | "buy_secondhand" | "research_further"
 
+TONE RULES:
+- Write like a trusted friend who has done the research, not a marketing machine.
+- Be honest about what is not known. Uncertainty is not weakness — hiding it is.
+- "second_hand_advice" should be practical and specific: where to look, what to search, what to watch out for.
+- "evidence_snippets" are concrete, citable facts — not summaries. E.g. "Patagonia publishes a full supplier list at patagonia.com/sourcing."
+
 OUTPUT as JSON:
 {
   "normalized_category": string (e.g. "waterproof shell jacket"),
-  "summary_verdict": string (2-3 sentences, what the user should know before buying),
+  "summary_verdict": string (2-3 sentences, what the user should know before buying — honest, direct, no fluff),
   "confidence_level": "high"|"medium"|"low"|"unknown",
+  "confidence_explanation": string (1-2 sentences explaining WHY this confidence level — what sources exist, what is missing),
   "evidence_notes": string (explain what sources were available, what is uncertain),
+  "what_we_know": string[] (3-5 concrete things we found solid evidence for, across all brands researched),
+  "what_we_dont_know": string[] (3-5 specific gaps — what data is missing, what brands hide, what is unverifiable),
+  "second_hand_advice": string (2-3 sentences of practical, specific advice for buying this product type second-hand — what to look for, what to avoid, best platforms for this category),
   "best_overall": {
     "brand_name": string,
-    "verdict": string,
+    "verdict": string (honest, direct — what makes this brand the best overall option),
     "why_chosen": string,
-    "main_known_evidence": string,
-    "main_unknown": string,
+    "main_known_evidence": string (the most solid evidence for this brand),
+    "main_unknown": string (the biggest thing we could not verify),
+    "evidence_snippets": string[] (1-3 specific, citable facts — e.g. "Brand X publishes full factory list at..."),
     "evidence_confidence": "high"|"medium"|"low"|"unknown",
     "recommended_buying_route": string,
     "product_url": string,
@@ -97,13 +108,14 @@ OUTPUT as JSON:
   },
   "best_for_durability": { same shape as best_overall },
   "best_for_transparency": { same shape as best_overall },
-  "best_second_hand_choice": { same shape as best_overall },
+  "best_second_hand_choice": { same shape as best_overall, plus: "secondhand_why": string (why this brand is particularly good value second-hand), "secondhand_tips": string (what to look for when buying this brand used) },
   "biggest_unknown": {
     "brand_name": string,
     "verdict": string,
     "why_chosen": string (why this brand is interesting despite unknowns),
     "main_known_evidence": string,
     "main_unknown": string,
+    "evidence_snippets": string[],
     "evidence_confidence": "high"|"medium"|"low"|"unknown",
     "recommended_buying_route": string,
     "product_url": string,
@@ -140,7 +152,11 @@ OUTPUT as JSON:
         normalized_category: { type: 'string' },
         summary_verdict: { type: 'string' },
         confidence_level: { type: 'string' },
+        confidence_explanation: { type: 'string' },
         evidence_notes: { type: 'string' },
+        what_we_know: { type: 'array', items: { type: 'string' } },
+        what_we_dont_know: { type: 'array', items: { type: 'string' } },
+        second_hand_advice: { type: 'string' },
         best_overall: {
           type: 'object',
           properties: {
@@ -149,6 +165,7 @@ OUTPUT as JSON:
             why_chosen: { type: 'string' },
             main_known_evidence: { type: 'string' },
             main_unknown: { type: 'string' },
+            evidence_snippets: { type: 'array', items: { type: 'string' } },
             evidence_confidence: { type: 'string' },
             recommended_buying_route: { type: 'string' },
             product_url: { type: 'string' },
@@ -163,6 +180,7 @@ OUTPUT as JSON:
             why_chosen: { type: 'string' },
             main_known_evidence: { type: 'string' },
             main_unknown: { type: 'string' },
+            evidence_snippets: { type: 'array', items: { type: 'string' } },
             evidence_confidence: { type: 'string' },
             recommended_buying_route: { type: 'string' },
             product_url: { type: 'string' },
@@ -177,6 +195,7 @@ OUTPUT as JSON:
             why_chosen: { type: 'string' },
             main_known_evidence: { type: 'string' },
             main_unknown: { type: 'string' },
+            evidence_snippets: { type: 'array', items: { type: 'string' } },
             evidence_confidence: { type: 'string' },
             recommended_buying_route: { type: 'string' },
             product_url: { type: 'string' },
@@ -191,6 +210,9 @@ OUTPUT as JSON:
             why_chosen: { type: 'string' },
             main_known_evidence: { type: 'string' },
             main_unknown: { type: 'string' },
+            evidence_snippets: { type: 'array', items: { type: 'string' } },
+            secondhand_why: { type: 'string' },
+            secondhand_tips: { type: 'string' },
             evidence_confidence: { type: 'string' },
             recommended_buying_route: { type: 'string' },
             product_url: { type: 'string' },
@@ -205,6 +227,7 @@ OUTPUT as JSON:
             why_chosen: { type: 'string' },
             main_known_evidence: { type: 'string' },
             main_unknown: { type: 'string' },
+            evidence_snippets: { type: 'array', items: { type: 'string' } },
             evidence_confidence: { type: 'string' },
             recommended_buying_route: { type: 'string' },
             product_url: { type: 'string' },
