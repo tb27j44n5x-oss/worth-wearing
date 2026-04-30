@@ -4,33 +4,49 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
   const { query, user_country } = await req.json();
+  const country = user_country || 'Norway';
 
   const prompt = `
 You are a sustainability research agent for ClaimCheck. A user has searched for: "${query}"
+User is located in: ${country}
 
-Your job is to discover ALL relevant clothing brands — big, medium, small, and niche — that make products matching this search.
+YOUR TWO JOBS:
+
+═══ JOB 1: FIND BRANDS ═══
+Find ALL relevant clothing/gear brands — big, medium, small, and niche — that make products matching "${query}".
 
 CRITICAL: Do NOT only list obvious large brands. Actively search for and include:
-- Small European brands
-- Niche outdoor brands
-- Norwegian/Nordic brands if relevant
-- Independent makers with strong sustainability signals
+- Small European/Nordic/independent brands
+- Niche specialist brands in this category
 - Lesser-known brands doing genuinely good work
+- Any brand with notable sustainability signals
 
-For wetsuits also include: Patagonia, Finisterre, Picture Organic, Two Thirds, Vissla, Matuse, Srface, Isurus, Rip Curl (for sustainability efforts), and any small wetsuit makers.
+For each brand, assess its likely sustainability profile.
 
-For each brand, assess its likely sustainability profile based on what you know or can find.
+For each brand, try to find the DIRECT URL to their specific product page for "${query}" (not just their homepage). If you find it, include it as product_url. Construct likely product URLs based on the brand's website structure if needed.
 
-User is located in: ${user_country || 'Norway'}
+═══ JOB 2: FIND SHOPPING LINKS ═══
+This is MANDATORY. You MUST generate these links for every search.
 
-ALSO FIND:
-- Direct product links (URLs) to the actual specific product pages that match "${query}" on each brand's website (e.g. link to the exact product page, not just the homepage). Only include links you are confident are real and specific to the product.
-- Second-hand product listings: find direct search URLs for "${query}" on second-hand platforms relevant to ${user_country || 'Norway'} such as Finn.no, eBay, Vinted, Facebook Marketplace, Tradera, Blocket, DBA. The URL should have the search query pre-filled so the user lands on relevant results.
+A) NEW product links — Find 4-8 direct product or category pages for "${query}" on brand websites and/or reputable retailers. These should be real, working URLs that go to the specific product or search results for this item. Examples of what a good URL looks like:
+  - https://www.patagonia.com/search/?q=wetsuit
+  - https://www.finisterre.com/collections/wetsuits
+  - https://www.outnorth.no/sok?q=votter
+
+B) SECOND-HAND search links — Generate working search URLs on second-hand marketplaces, pre-filled with "${query}" as the search term. Use these exact URL patterns:
+  - Finn.no: https://www.finn.no/bap/forsale/search.html?q=${encodeURIComponent(query)}
+  - eBay: https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}
+  - Vinted: https://www.vinted.no/catalog?search_text=${encodeURIComponent(query)}
+  - Facebook Marketplace: https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(query)}
+  - Tradera (SE): https://www.tradera.com/search?q=${encodeURIComponent(query)}
+  - Blocket (SE): https://www.blocket.se/annonser/hela_sverige/fritid_hobby?q=${encodeURIComponent(query)}
+
+Always include at least Finn.no, eBay, and Vinted in second_hand_links. Add others if relevant.
 
 OUTPUT JSON:
 {
-  "search_query": string,
-  "product_category": string,
+  "search_query": "${query}",
+  "product_category": string (normalized category name),
   "brands": [
     {
       "name": string,
@@ -39,32 +55,33 @@ OUTPUT JSON:
       "size_estimate": "small"|"medium"|"large"|"niche",
       "categories": string[],
       "description": string (1-2 sentences),
-      "why_shown": string (why this brand is relevant to the search),
+      "why_shown": string (why this brand is relevant to "${query}"),
       "preliminary_grade": "A+"|"A"|"A-"|"B+"|"B"|"B-"|"C+"|"C"|"C-"|"D"|"F"|"unknown",
       "preliminary_confidence": "high"|"medium"|"low"|"unknown",
-      "standout_practice": string (one key thing this brand does well, if known),
-      "main_concern": string (one key concern, if known),
+      "standout_practice": string,
+      "main_concern": string,
       "second_hand_available": boolean,
       "is_small_brand_spotlight": boolean,
       "spotlight_reason": string,
       "result_group": "lower_impact"|"small_discovery"|"second_hand_first"|"repairable_durable"|"caution",
       "shipping_origin": string,
-      "product_url": string (direct URL to the specific product matching the search on this brand's site, or empty string if not found)
+      "product_url": string (direct URL to specific product page for "${query}", or empty string)
     }
   ],
   "product_links": [
     {
       "brand": string,
-      "product_name": string,
-      "url": string,
+      "product_name": string (describe what the link leads to, e.g. "Patagonia R1 Wetsuit collection"),
+      "url": string (real, working URL),
       "price_approx": string,
-      "note": string
+      "note": string,
+      "is_sustainable_retailer": boolean
     }
   ],
   "second_hand_links": [
     {
       "platform": string,
-      "search_url": string,
+      "search_url": string (pre-filled search URL for "${query}"),
       "note": string
     }
   ]
@@ -114,7 +131,8 @@ OUTPUT JSON:
               product_name: { type: 'string' },
               url: { type: 'string' },
               price_approx: { type: 'string' },
-              note: { type: 'string' }
+              note: { type: 'string' },
+              is_sustainable_retailer: { type: 'boolean' }
             }
           }
         },
@@ -133,5 +151,21 @@ OUTPUT JSON:
     }
   });
 
-  return Response.json({ success: true, data: result });
+  // Guarantee second-hand links are always present using known-good URL patterns
+  const encodedQuery = encodeURIComponent(query);
+  const guaranteedSecondHand = [
+    { platform: 'Finn.no', search_url: `https://www.finn.no/bap/forsale/search.html?q=${encodedQuery}`, note: 'Norwegian marketplace' },
+    { platform: 'eBay', search_url: `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}`, note: 'International' },
+    { platform: 'Vinted', search_url: `https://www.vinted.no/catalog?search_text=${encodedQuery}`, note: 'Clothing-focused' },
+    { platform: 'Facebook Marketplace', search_url: `https://www.facebook.com/marketplace/search/?query=${encodedQuery}`, note: 'Local listings' },
+  ];
+
+  // Merge: keep AI-generated ones, add guaranteed ones for platforms not already present
+  const existingPlatforms = new Set((result.second_hand_links || []).map(l => l.platform.toLowerCase()));
+  const merged = [
+    ...(result.second_hand_links || []),
+    ...guaranteedSecondHand.filter(g => !existingPlatforms.has(g.platform.toLowerCase()))
+  ];
+
+  return Response.json({ success: true, data: { ...result, second_hand_links: merged } });
 });
