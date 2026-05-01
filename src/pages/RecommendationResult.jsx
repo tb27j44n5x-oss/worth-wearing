@@ -37,7 +37,25 @@ export default function RecommendationResult() {
     setLoading(true);
     setError(null);
     base44.functions.invoke("getJacketRecommendation", { query, country, preference, budget })
-      .then(res => setResult(res.data?.result || res.data))
+      .then(res => {
+        const recommendation = res.data?.result || res.data;
+        setResult(recommendation);
+        
+        // Fetch brand website crawl data if there's an independent brand spotlight
+        if (recommendation?.independent_brand_spotlight?.brand_name) {
+          base44.entities.BrandWebsiteCrawl.filter(
+            { brand_name: recommendation.independent_brand_spotlight.brand_name },
+            "-crawl_date",
+            1
+          )
+            .then(crawls => {
+              if (crawls?.length > 0) {
+                setCrawlData(crawls[0]);
+              }
+            })
+            .catch(() => {});
+        }
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [query, country, preference, budget]);
