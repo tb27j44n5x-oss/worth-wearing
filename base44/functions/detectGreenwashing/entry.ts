@@ -64,25 +64,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Flag factory information gaps for worker score (CRITICAL)
+    // Flag factory information gaps for worker score (CRITICAL) — only if crawl was performed
     const crawl = await base44.asServiceRole.entities.BrandWebsiteCrawl.filter({
       brand_id
     }).then(results => results[0]).catch(() => null);
 
     const namedFactories = crawl?.key_findings?.factory_information?.named_factories?.length || 0;
     
-    if (report_data.worker_argument && namedFactories === 0) {
+    // Only penalize if crawl exists (brand was analyzed) but no factories disclosed
+    if (crawl && report_data.worker_argument && namedFactories === 0) {
       flags.push('factory_names_withheld');
-      greenwashingRisk = 'high'; // Auto-elevate to high if worker claims exist but no factory disclosure
+      greenwashingRisk = 'high'; // Auto-elevate to high if worker claims exist but brand hides factory info
       claimsNeedingReview.push({
-        claim: `Worker ethics claimed ("${report_data.worker_argument?.substring(0, 50)}...") but factory locations not disclosed`,
+        claim: `Worker ethics claimed ("${report_data.worker_argument?.substring(0, 50)}...") but factory locations not disclosed despite analysis`,
         reason: 'unverified_wage_claim',
         priority: 'high'
       });
     }
     
-    // Check if worker_score > 5 but no wage data published
-    if (report_data.worker_score > 5) {
+    // Check if worker_score > 5 but no wage data published (only if we have evidence sources to check)
+    if (report_data.worker_score > 5 && evidenceSources.length > 0) {
       const workerSources = evidenceSources.filter(e => e.claim_category === 'worker_ethics');
       const hasWageData = workerSources.some(s => 
         s.summary?.includes('wage') || 
@@ -92,11 +93,12 @@ Deno.serve(async (req) => {
         s.summary?.includes('$')
       );
       
-      if (!hasWageData && namedFactories === 0) {
+      // Only flag if we have evidence sources to analyze
+      if (!hasWageData && workerSources.length > 0 && namedFactories === 0) {
         flags.push('wage_claim_greenwashing');
         greenwashingRisk = greenwashingRisk === 'high' ? 'high' : 'medium';
         claimsNeedingReview.push({
-          claim: `Worker score ${report_data.worker_score}/10 claimed but no wage data found and factories not named`,
+          claim: `Worker score ${report_data.worker_score}/10 claimed but no wage data in sources and factories not named`,
           reason: 'unverified_wage_claim',
           priority: 'high'
         });

@@ -59,27 +59,26 @@ Deno.serve(async (req) => {
     const coords = COUNTRY_COORDINATES[country] || { lat: 0, lng: 0 };
     const distance = haversineDistance(coords.lat, coords.lng, userCoords.lat, userCoords.lng);
     
-    const emissionFactor = emissionFactors[shipping_mode] || emissionFactors.sea;
-    const totalTonKm = (product_weight_kg / 1000) * distance;
-    const co2_kg = totalTonKm * emissionFactor;
+    // Calculate for both sea and air to show range
+    const seaCO2 = (product_weight_kg / 1000) * distance * emissionFactors.sea;
+    const airCO2 = (product_weight_kg / 1000) * distance * emissionFactors.air;
 
     return {
       manufacturing_country: country,
       distance_km: Math.round(distance),
-      shipping_mode,
       product_weight_kg,
-      co2_kg: parseFloat(co2_kg.toFixed(3)),
-      co2_grams: Math.round(co2_kg * 1000),
-      assumption: `Estimated via ${shipping_mode} shipping from ${country} to ${user_country}`
+      sea_shipping_co2_kg: parseFloat(seaCO2.toFixed(3)),
+      air_shipping_co2_kg: parseFloat(airCO2.toFixed(3)),
+      sea_shipping_co2_grams: Math.round(seaCO2 * 1000),
+      air_shipping_co2_grams: Math.round(airCO2 * 1000),
+      best_case: `Sea shipping: ${Math.round(seaCO2 * 1000)}g CO2`,
+      worst_case: `Air shipping: ${Math.round(airCO2 * 1000)}g CO2`
     };
   });
 
-  // Calculate range (assuming mixed sea/air or sea/rail)
-  const seaResults = results.map(r => ({ ...r, shipping_mode: 'sea', co2_kg: (r.distance_km / 1000) * r.product_weight_kg * emissionFactors.sea }));
-  const airResults = results.map(r => ({ ...r, shipping_mode: 'air', co2_kg: (r.distance_km / 1000) * r.product_weight_kg * emissionFactors.air }));
-
-  const totalSeaCO2 = seaResults.reduce((sum, r) => sum + r.co2_kg, 0);
-  const totalAirCO2 = airResults.reduce((sum, r) => sum + r.co2_kg, 0);
+  // Calculate total range across all manufacturing countries
+  const totalSeaCO2 = results.reduce((sum, r) => sum + r.sea_shipping_co2_kg, 0);
+  const totalAirCO2 = results.reduce((sum, r) => sum + r.air_shipping_co2_kg, 0);
 
   return Response.json({
     success: true,
