@@ -92,16 +92,16 @@ export default function SearchPage() {
             <Search className="ml-4 text-muted-foreground flex-shrink-0" size={18} />
             <input
               type="text"
-              placeholder="Try: waterproof shell jacket, natural rubber wetsuit, warm winter coat"
+              placeholder="Try: waterproof jacket, natural rubber wetsuit"
               value={query}
               onChange={handleInputChange}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="flex-1 px-3 py-4 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm min-w-0"
+              className="flex-1 px-3 sm:px-4 py-4 sm:py-5 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base min-w-0"
             />
             <button
               onClick={() => handleSearch()}
               disabled={!query.trim()}
-              className="m-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 active:scale-95 disabled:opacity-40 transition-all duration-150 flex items-center gap-1.5 flex-shrink-0 font-syne disabled:cursor-not-allowed"
+              className="m-2 sm:m-3 px-3 sm:px-5 py-3 sm:py-4 bg-primary text-primary-foreground rounded-xl text-xs sm:text-sm font-medium hover:bg-primary/90 active:scale-95 disabled:opacity-40 transition-all duration-150 flex items-center gap-1.5 flex-shrink-0 font-syne disabled:cursor-not-allowed min-h-[48px] sm:min-h-[52px]"
             >
               <span className="hidden sm:inline">Find a better buy</span>
               <ArrowRight size={16} className="transition-transform group-active:translate-x-1" />
@@ -109,14 +109,15 @@ export default function SearchPage() {
           </div>
 
           {/* Optional filters */}
-          <div className="flex flex-wrap gap-3 justify-center mb-6">
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-6">
             {/* Country */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150">
-                  <MapPin size={15} className="text-primary/70 flex-shrink-0" />
-                  <span>{country}</span>
-                  <ChevronDown size={13} className="text-primary/50 ml-0.5" />
+                <button className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 sm:py-3 bg-secondary border border-secondary rounded-full font-inter text-xs sm:text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150 min-h-[44px] sm:min-h-[48px]">
+                  <MapPin size={14} className="text-primary/70 flex-shrink-0" />
+                  <span className="hidden sm:inline">{country}</span>
+                  <span className="sm:hidden">{country.split(' ')[0]}</span>
+                  <ChevronDown size={12} className="text-primary/50" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center">
@@ -129,10 +130,11 @@ export default function SearchPage() {
             {/* Preference */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150">
-                  <RefreshCw size={15} className="text-primary/70 flex-shrink-0" />
-                  <span>{{ either: "New or second-hand", new: "Buying new", secondhand: "Second-hand only" }[preference]}</span>
-                  <ChevronDown size={13} className="text-primary/50 ml-0.5" />
+                <button className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 sm:py-3 bg-secondary border border-secondary rounded-full font-inter text-xs sm:text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150 min-h-[44px] sm:min-h-[48px]">
+                  <RefreshCw size={14} className="text-primary/70 flex-shrink-0" />
+                  <span className="hidden sm:inline">{{ either: "New or second-hand", new: "Buying new", secondhand: "Second-hand only" }[preference]}</span>
+                  <span className="sm:hidden">{{ either: "Any", new: "New", secondhand: "Used" }[preference]}</span>
+                  <ChevronDown size={12} className="text-primary/50" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center">
@@ -145,10 +147,11 @@ export default function SearchPage() {
             {/* Budget */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150">
-                  <DollarSign size={15} className="text-primary/70 flex-shrink-0" />
-                  <span>{{ low: "Budget", mid: "Mid-range", premium: "Premium" }[budget]}</span>
-                  <ChevronDown size={13} className="text-primary/50 ml-0.5" />
+                <button className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 sm:py-3 bg-secondary border border-secondary rounded-full font-inter text-xs sm:text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150 min-h-[44px] sm:min-h-[48px]">
+                  <DollarSign size={14} className="text-primary/70 flex-shrink-0" />
+                  <span className="hidden sm:inline">{{ low: "Budget", mid: "Mid-range", premium: "Premium" }[budget]}</span>
+                  <span className="sm:hidden">{{ low: "$", mid: "$$", premium: "$$$" }[budget]}</span>
+                  <ChevronDown size={12} className="text-primary/50" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center">
@@ -165,7 +168,7 @@ export default function SearchPage() {
               <button
                 key={ex}
                 onClick={() => handleSearch(ex)}
-                className="text-sm text-muted-foreground bg-secondary/60 hover:bg-secondary hover:text-foreground active:scale-95 px-3 py-1.5 rounded-full transition-all duration-150 border border-border"
+                className="text-xs sm:text-sm text-muted-foreground bg-secondary/60 hover:bg-secondary hover:text-foreground active:scale-95 px-3 sm:px-4 py-2.5 sm:py-2 rounded-full transition-all duration-150 border border-border"
               >
                 {ex}
               </button>

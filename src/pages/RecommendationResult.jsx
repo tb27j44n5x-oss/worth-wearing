@@ -170,14 +170,19 @@ export default function RecommendationResult() {
                 {result.best_for_transparency && (
                   <RecommendationBlock block={result.best_for_transparency} label="Most transparent" />
                 )}
-                {result.best_for_worker_ethics && (
-                  <WorkerEthicsBlock block={result.best_for_worker_ethics} />
+                {(result.best_for_worker_ethics || result.best_for_circular_economy || result.best_second_hand_choice) && (
+                  <div className="md:hidden space-y-4">
+                    {result.best_for_worker_ethics && <WorkerEthicsBlock block={result.best_for_worker_ethics} />}
+                    {result.best_for_circular_economy && <RecommendationBlock block={result.best_for_circular_economy} label="Best circular economy" icon="circular" />}
+                    {result.best_second_hand_choice && <RecommendationBlock block={result.best_second_hand_choice} label="Best found second-hand" icon="secondhand" />}
+                  </div>
                 )}
-                {result.best_for_circular_economy && (
-                  <RecommendationBlock block={result.best_for_circular_economy} label="Best circular economy" icon="circular" />
-                )}
-                {result.best_second_hand_choice && (
-                  <RecommendationBlock block={result.best_second_hand_choice} label="Best found second-hand" icon="secondhand" />
+                {(result.best_for_worker_ethics || result.best_for_circular_economy || result.best_second_hand_choice) && (
+                  <div className="hidden md:grid md:grid-cols-2 gap-4">
+                    {result.best_for_worker_ethics && <WorkerEthicsBlock block={result.best_for_worker_ethics} />}
+                    {result.best_for_circular_economy && <RecommendationBlock block={result.best_for_circular_economy} label="Best circular economy" icon="circular" />}
+                    {result.best_second_hand_choice && <RecommendationBlock block={result.best_second_hand_choice} label="Best found second-hand" icon="secondhand" />}
+                  </div>
                 )}
               </div>
               {result.independent_brand_spotlight && (
