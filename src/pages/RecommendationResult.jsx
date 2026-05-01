@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
+import MobileHeader from "@/components/MobileHeader";
 import { motion } from "framer-motion";
 import RecommendationBlock from "@/components/recommendation/RecommendationBlock";
 import DetailedTable from "@/components/recommendation/DetailedTable";
@@ -33,8 +34,9 @@ export default function RecommendationResult() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto border-b border-border">
+      <MobileHeader title={query ? `"${query}"` : "Results"} />
+      {/* Desktop Nav */}
+      <nav className="hidden md:flex items-center justify-between px-6 py-5 max-w-5xl mx-auto border-b border-border">
         <Link to="/" className="font-playfair text-xl font-bold text-primary tracking-tight">ClaimCheck</Link>
         <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={14} /> New search
