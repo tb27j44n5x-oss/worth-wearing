@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowRight, Shield, Wrench, ShoppingBag, Eye } from "lucide-react";
+import { Search, ArrowRight, Shield, Wrench, ShoppingBag, Eye, MapPin, RefreshCw, DollarSign, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
-import MobileSelect from "@/components/MobileSelect";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const ROTATING_WORDS = ["jacket", "hoodie", "wetsuit", "base layers", "jeans", "clothes"];
 
@@ -94,36 +94,53 @@ export default function SearchPage() {
 
           {/* Optional filters */}
           <div className="flex flex-wrap gap-3 justify-center mb-6">
-            <MobileSelect
-              value={country}
-              onChange={setCountry}
-              options={[
-                { value: "Norway", label: "Norway" },
-                { value: "Sweden", label: "Sweden" },
-                { value: "Denmark", label: "Denmark" },
-                { value: "UK", label: "UK" },
-                { value: "Germany", label: "Germany" },
-                { value: "Netherlands", label: "Netherlands" },
-              ]}
-            />
-            <MobileSelect
-              value={preference}
-              onChange={setPreference}
-              options={[
-                { value: "either", label: "New or second-hand" },
-                { value: "new", label: "Buying new" },
-                { value: "secondhand", label: "Second-hand only" },
-              ]}
-            />
-            <MobileSelect
-              value={budget}
-              onChange={setBudget}
-              options={[
-                { value: "low", label: "Budget" },
-                { value: "mid", label: "Mid-range" },
-                { value: "premium", label: "Premium" },
-              ]}
-            />
+            {/* Country */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 transition-colors">
+                  <MapPin size={15} className="text-primary/70 flex-shrink-0" />
+                  <span>{country}</span>
+                  <ChevronDown size={13} className="text-primary/50 ml-0.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                {["Norway","Sweden","Denmark","UK","Germany","Netherlands"].map(c => (
+                  <DropdownMenuItem key={c} onClick={() => setCountry(c)}>{c}</DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Preference */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 transition-colors">
+                  <RefreshCw size={15} className="text-primary/70 flex-shrink-0" />
+                  <span>{{ either: "New or second-hand", new: "Buying new", secondhand: "Second-hand only" }[preference]}</span>
+                  <ChevronDown size={13} className="text-primary/50 ml-0.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => setPreference("either")}>New or second-hand</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreference("new")}>Buying new</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreference("secondhand")}>Second-hand only</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Budget */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 transition-colors">
+                  <DollarSign size={15} className="text-primary/70 flex-shrink-0" />
+                  <span>{{ low: "Budget", mid: "Mid-range", premium: "Premium" }[budget]}</span>
+                  <ChevronDown size={13} className="text-primary/50 ml-0.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => setBudget("low")}>Budget</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBudget("mid")}>Mid-range</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBudget("premium")}>Premium</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Example searches */}
