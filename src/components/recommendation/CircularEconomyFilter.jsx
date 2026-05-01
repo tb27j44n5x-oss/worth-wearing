@@ -72,12 +72,14 @@ export default function CircularEconomyFilter({ isActive, onToggle, brandsWithCi
                   </div>
                 )}
 
-                <button
-                  onClick={() => window.open(`${brand.website}?repair=true`, '_blank')}
-                  className="text-xs text-primary hover:underline font-medium mt-2 inline-block"
-                >
-                  Learn how to use repair services →
-                </button>
+                {brand.website && (
+                  <button
+                    onClick={() => window.open(`${brand.website}?repair=true`, '_blank')}
+                    className="text-xs text-primary hover:underline font-medium mt-2 inline-block"
+                  >
+                    Learn how to use repair services →
+                  </button>
+                )}
               </div>
             ))}
           </div>

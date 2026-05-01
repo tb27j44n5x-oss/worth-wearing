@@ -16,7 +16,7 @@ const CONFIDENCE_DOT = {
 
 function ScoreCell({ score }) {
   if (score === undefined || score === null) return <span className="text-muted-foreground text-xs">—</span>;
-  return <span className={`font-semibold text-sm font-playfair ${SCORE_COLOR(score)}`}>{score}</span>;
+  return <span className={`font-semibold text-sm ${SCORE_COLOR(score)}`}>{score}</span>;
 }
 
 export default function DetailedTable({ rows }) {
