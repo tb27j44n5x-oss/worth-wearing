@@ -12,7 +12,15 @@ Deno.serve(async (req) => {
   const userCountry = country || 'Norway';
 
   // ── 1. Check cache ──────────────────────────────────────────────────────────
-  const normalizedQuery = query.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_').trim();
+  // Normalize aggressively so cache hits reliably (strip plurals, sort words, etc.)
+  const normalizedQuery = query.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\b(a|an|the|for|and|or|with|in|of|best|good|cheap|quality)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .sort()
+    .join('_');
 
   const existing = await base44.asServiceRole.entities.RecommendationSet.filter({ normalized_query: normalizedQuery });
 
@@ -49,7 +57,7 @@ Deno.serve(async (req) => {
     'User is open to buying new or second-hand.';
 
   const prompt = `
-You are a rigorous sustainability buying advisor for ClaimCheck. A user in ${userCountry} is looking for: "${query}".
+You are a rigorous sustainability buying advisor for Worth Wearing. A user in ${userCountry} is looking for: "${query}".
 
 Context:
 - ${preferenceNote}
@@ -57,20 +65,28 @@ Context:
 - Be skeptical. Separate verified evidence from brand marketing claims.
 - Use careful language: "Based on available evidence", "Limited evidence", "Unverified claim".
 - Do NOT assume a brand is bad because data is missing — separate lack of evidence from evidence of bad practice.
-- Small brands should NOT be penalised for lacking big sustainability reports.
+- Small/independent brands should NOT be penalised for lacking big sustainability reports.
 - Confidence levels: "high" = verified third-party evidence, "medium" = partial evidence, "low" = mostly brand claims, "unknown" = insufficient data.
 
 YOUR TASKS:
 1. Identify the product category from the query.
-2. Research 8-10 relevant brands (including niche/small/European brands, not just big names).
+2. Research 8-10 relevant brands — MUST include a mix of well-known brands AND small/independent brands.
 3. For each brand: durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location.
 4. For top brands, find a direct product URL for "${query}" on their website.
+5. REDDIT RESEARCH (MANDATORY): For each shortlisted brand, search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, or greenwashing.
+
+SMALL BRAND SPOTLIGHT (MANDATORY):
+- You MUST identify at least one small/independent brand for "independent_brand_spotlight" — a brand with fewer than ~500 employees, NOT a mainstream outdoor giant.
+- The brand should be notable for: honest communication about sustainability trade-offs, transparent pricing breakdown, community trust, or genuine material innovation.
+- Even if they don't tick every sustainability box, they should be moving in the right direction and TALKING about it honestly.
+- Look for: honest "we're not perfect" statements, factory visits documented, price-transparency pages, founder-led transparency.
 
 TONE RULES:
-- Write like a trusted friend who has done the research.
+- Write like a trusted friend who has done the research, not a corporate sustainability report.
 - Be honest about unknowns. Uncertainty is not weakness — hiding it is.
 - "second_hand_advice": practical, specific — where to look, what to check, what to avoid.
 - "evidence_snippets": concrete citable facts only (e.g. "Patagonia publishes a full supplier list at patagonia.com/sourcing").
+- reddit_sentiment: summarise what real users say — good and bad. Do not sanitise negative feedback.
 
 Keep all text fields concise. Limit detailed_table to max 8 brands. Limit evidence_snippets to max 2 items per brand block.
 
@@ -110,9 +126,25 @@ OUTPUT as JSON:
   ],
   "second_hand_links": [
     { "platform": string, "search_url": string, "note": string }
-  ]
+  ],
+  "independent_brand_spotlight": {
+    "brand_name": string,
+    "verdict": string,
+    "why_chosen": string (why this small brand stands out — what they say honestly, not just what they claim),
+    "reddit_sentiment": string (what Reddit/community says about them — positive AND negative),
+    "main_known_evidence": string,
+    "main_unknown": string,
+    "evidence_confidence": "high"|"medium"|"low"|"unknown",
+    "recommended_buying_route": "buy_new"|"buy_secondhand"|"research_further",
+    "product_url": string,
+    "website": string
+  }
 }
+
+REDDIT SENTIMENT — for each brand block in detailed_table, also include:
+  "reddit_sentiment": string (1-2 sentences — what r/BuyItForLife and relevant subreddits actually say. Include specific praise AND complaints.)
 `;
+
 
   const jsonSchema = {
     type: 'object',
@@ -186,7 +218,7 @@ OUTPUT as JSON:
             repairability_score: { type: 'number' }, secondhand_score: { type: 'number' },
             manufacturing_clarity_score: { type: 'number' }, confidence_level: { type: 'string' },
             recommended_buying_route: { type: 'string' }, is_reviewed: { type: 'boolean' },
-            website: { type: 'string' }
+            website: { type: 'string' }, reddit_sentiment: { type: 'string' }
           }
         }
       },
@@ -195,6 +227,16 @@ OUTPUT as JSON:
         items: {
           type: 'object',
           properties: { platform: { type: 'string' }, search_url: { type: 'string' }, note: { type: 'string' } }
+        }
+      },
+      independent_brand_spotlight: {
+        type: 'object',
+        properties: {
+          brand_name: { type: 'string' }, verdict: { type: 'string' }, why_chosen: { type: 'string' },
+          reddit_sentiment: { type: 'string' },
+          main_known_evidence: { type: 'string' }, main_unknown: { type: 'string' },
+          evidence_confidence: { type: 'string' }, recommended_buying_route: { type: 'string' },
+          product_url: { type: 'string' }, website: { type: 'string' }
         }
       }
     }

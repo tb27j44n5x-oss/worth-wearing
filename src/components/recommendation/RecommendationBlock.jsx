@@ -1,4 +1,4 @@
-import { ExternalLink, HelpCircle, FileText } from "lucide-react";
+import { ExternalLink, HelpCircle, FileText, MessageCircle, Store } from "lucide-react";
 
 const CONFIDENCE_STYLES = {
   high:    "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -20,6 +20,7 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
   const route = ROUTE_CONFIG[block.recommended_buying_route];
   const isSecondhand = icon === "secondhand";
   const isUnknown = icon === "unknown";
+  const isIndependent = icon === "independent";
 
   return (
     <div className={`bg-card border rounded-2xl p-6 space-y-4 flex flex-col
@@ -29,7 +30,7 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
       {/* Label + confidence */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <p className={`text-xs font-semibold uppercase tracking-wide mb-1 font-syne ${isUnknown ? "text-muted-foreground" : isSecondhand ? "text-accent" : highlight ? "text-primary" : "text-muted-foreground"}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wide mb-1 font-syne ${isUnknown ? "text-muted-foreground" : isSecondhand ? "text-accent" : isIndependent ? "text-amber-700" : highlight ? "text-primary" : "text-muted-foreground"}`}>
             {label}
           </p>
           <h3 className="font-syne text-xl font-bold text-foreground">{block.brand_name}</h3>
@@ -74,6 +75,22 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
           </div>
         )}
       </div>
+
+      {/* Reddit sentiment */}
+      {block.reddit_sentiment && (
+        <div className="flex items-start gap-2 bg-muted/60 rounded-xl px-3 py-2.5">
+          <MessageCircle size={12} className="text-muted-foreground flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground leading-snug"><span className="font-medium text-foreground">Reddit: </span>{block.reddit_sentiment}</p>
+        </div>
+      )}
+
+      {/* Independent brand note */}
+      {isIndependent && block.why_chosen && (
+        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+          <Store size={12} className="text-amber-700 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800 leading-snug">{block.why_chosen}</p>
+        </div>
+      )}
 
       {/* Evidence snippets */}
       {block.evidence_snippets?.length > 0 && (

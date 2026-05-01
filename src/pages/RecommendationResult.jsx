@@ -81,7 +81,7 @@ export default function RecommendationResult() {
             {/* Summary header */}
             <SummaryHeader result={result} />
 
-            {/* 5 recommendation blocks */}
+            {/* Recommendation blocks */}
             <div className="space-y-4">
               <h2 className="font-syne text-2xl font-semibold text-foreground">Our picks</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -98,6 +98,9 @@ export default function RecommendationResult() {
                   <RecommendationBlock block={result.best_second_hand_choice} label="Best found second-hand" icon="secondhand" />
                 )}
               </div>
+              {result.independent_brand_spotlight && (
+                <RecommendationBlock block={result.independent_brand_spotlight} label="Independent brand spotlight" icon="independent" fullWidth />
+              )}
               {result.biggest_unknown && (
                 <RecommendationBlock block={result.biggest_unknown} label="What we still don't know" icon="unknown" fullWidth />
               )}
