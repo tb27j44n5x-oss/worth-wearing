@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
         success: true,
         result: {
           ...parsedResult,
+          recommendation_set_id: cached.id,
           is_cached: true,
           is_ai_unreviewed: cached.is_ai_unreviewed,
           last_researched_at: cached.updated_date,
@@ -242,7 +243,7 @@ OUTPUT as JSON:
   const finalResult = { ...aiResult, second_hand_links: mergedLinks };
 
   // ── 5. Cache result ─────────────────────────────────────────────────────────
-  base44.asServiceRole.entities.RecommendationSet.create({
+  const savedSet = await base44.asServiceRole.entities.RecommendationSet.create({
     query,
     normalized_query: normalizedQuery,
     category_key: (aiResult.normalized_category || query).toLowerCase().replace(/\s+/g, '_'),
@@ -252,12 +253,13 @@ OUTPUT as JSON:
     result_json: JSON.stringify(finalResult),
     is_ai_unreviewed: true,
     last_used_at: new Date().toISOString(),
-  }).catch(() => {});
+  }).catch(() => null);
 
   return Response.json({
     success: true,
     result: {
       ...finalResult,
+      recommendation_set_id: savedSet?.id || null,
       is_cached: false,
       is_ai_unreviewed: true,
     }

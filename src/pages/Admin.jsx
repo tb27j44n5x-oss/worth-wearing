@@ -22,7 +22,16 @@ export default function Admin() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  if (user && user.role !== "admin") {
+  // Still loading — don't flash the admin UI
+  if (!user) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-accent/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (user.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

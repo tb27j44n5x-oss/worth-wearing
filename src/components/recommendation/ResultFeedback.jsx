@@ -24,8 +24,10 @@ export default function ResultFeedback({ query, recommendationSetId }) {
   }, [query]);
 
   const handleVote = async (v) => {
+    if (done || submitting) return;
     setVote(v);
-    // Submit immediately without comment
+    // Only submit immediately if comment box is not open
+    // If comment box opens later, submission happens via handleSubmitWithComment
     if (!showComment) {
       await submitFeedback(v, "");
     }

@@ -13,12 +13,12 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'suggestion_id is required' }, { status: 400 });
   }
 
-  // Fetch the suggestion
-  const suggestions = await base44.asServiceRole.entities.BrandSuggestion.filter({ id: suggestion_id });
-  if (!suggestions.length) {
+  // Fetch the suggestion — filter by id doesn't work on the id field, list and find
+  const allSuggestions = await base44.asServiceRole.entities.BrandSuggestion.list('-created_date', 200);
+  const suggestion = allSuggestions.find(s => s.id === suggestion_id);
+  if (!suggestion) {
     return Response.json({ error: 'Suggestion not found' }, { status: 404 });
   }
-  const suggestion = suggestions[0];
 
   // Mark as running
   await base44.asServiceRole.entities.BrandSuggestion.update(suggestion_id, {

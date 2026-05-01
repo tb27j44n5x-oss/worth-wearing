@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ChevronUp, Loader2, CheckCircle, XCircle, Clock, Plus, X } from "lucide-react";
+import { ChevronUp, Loader2, CheckCircle, Plus, X } from "lucide-react";
 
 const STATUS_CONFIG = {
   pending:           { label: "Pending review",      color: "text-muted-foreground bg-muted border-border" },
