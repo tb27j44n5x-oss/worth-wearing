@@ -9,10 +9,11 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import SearchPage from './pages/SearchPage';
 import RecommendationResult from './pages/RecommendationResult';
 import Suggest from './pages/Suggest';
+import Discover from './pages/Discover';
 import Admin from './pages/Admin';
 import BottomNav from './components/BottomNav';
 
-const TAB_ROOTS = ['/', '/suggest', '/admin'];
+const TAB_ROOTS = ['/', '/suggest', '/discover', '/admin'];
 const getTabIndex = (path) => {
   const idx = TAB_ROOTS.findIndex(r => r === path || (r !== '/' && path.startsWith(r)));
   return idx === -1 ? 0 : idx;
@@ -34,6 +35,7 @@ function AnimatedRoutes() {
           <Route path="/" element={<SearchPage />} />
           <Route path="/recommendation" element={<RecommendationResult />} />
           <Route path="/suggest" element={<Suggest />} />
+          <Route path="/discover" element={<Discover />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>

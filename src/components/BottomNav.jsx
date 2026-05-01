@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, Lightbulb, Settings } from "lucide-react";
+import { Search, Sparkles, Lightbulb, Settings } from "lucide-react";
 
 const NAV_ITEMS = [
   { to: "/", icon: Search, label: "Search" },
+  { to: "/discover", icon: Sparkles, label: "Discover" },
   { to: "/suggest", icon: Lightbulb, label: "Suggest" },
   { to: "/admin", icon: Settings, label: "Admin" },
 ];

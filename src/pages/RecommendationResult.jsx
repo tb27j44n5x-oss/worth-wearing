@@ -14,6 +14,10 @@ import LifecycleStages from "@/components/recommendation/LifecycleStages";
 import GreenwashingRiskBadge from "@/components/recommendation/GreenwashingRiskBadge";
 import WorkerEthicsBlock from "@/components/recommendation/WorkerEthicsBlock";
 import DurabilityLogger from "@/components/DurabilityLogger";
+import ContentFlagForm from "@/components/recommendation/ContentFlagForm";
+import DataFreshnessBadge from "@/components/recommendation/DataFreshnessBadge";
+import CircularEconomyFilter from "@/components/recommendation/CircularEconomyFilter";
+import SmallBrandTransparencyView from "@/components/recommendation/SmallBrandTransparencyView";
 
 export default function RecommendationResult() {
   const [searchParams] = useSearchParams();
@@ -25,6 +29,8 @@ export default function RecommendationResult() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [circularFilter, setCircularFilter] = useState(false);
+  const [crawlData, setCrawlData] = useState(null);
 
   useEffect(() => {
     if (!query) return;
@@ -90,9 +96,28 @@ export default function RecommendationResult() {
               )}
             </div>
 
+            {/* Data freshness badge */}
+            {result.last_researched_at && (
+              <DataFreshnessBadge 
+                lastResearched={result.last_researched_at}
+                evidenceFreshness={result.evidence_freshness}
+              />
+            )}
+
             {/* Lifecycle stages */}
             {result.lifecycle_stages && (
               <LifecycleStages lifecycleData={result.lifecycle_stages} />
+            )}
+
+            {/* Circular economy filter */}
+            {result.detailed_table && (
+              <CircularEconomyFilter
+                isActive={circularFilter}
+                onToggle={() => setCircularFilter(!circularFilter)}
+                brandsWithCircular={
+                  !circularFilter ? null : result.detailed_table.filter(b => (b.circularity_score || 0) > 7)
+                }
+              />
             )}
 
             {/* Recommendation blocks */}
@@ -125,6 +150,14 @@ export default function RecommendationResult() {
                 <RecommendationBlock block={result.biggest_unknown} label="What we still don't know" icon="unknown" fullWidth />
               )}
             </div>
+
+            {/* Small brand transparency */}
+            {result.independent_brand_spotlight && crawlData && (
+              <SmallBrandTransparencyView 
+                brand={result.independent_brand_spotlight.brand_name} 
+                crawlData={crawlData}
+              />
+            )}
 
             {/* Editorial principle */}
             <div className="bg-secondary/40 border border-border rounded-2xl px-6 py-5">
@@ -171,6 +204,14 @@ export default function RecommendationResult() {
                 categoryKey={result.normalized_category}
               />
             )}
+
+            {/* Content flag form */}
+            <div className="flex justify-center">
+              <ContentFlagForm 
+                brandName={result.best_overall?.brand_name || query}
+                reportId={result.recommendation_set_id}
+              />
+            </div>
 
             {/* User feedback */}
             <div className="bg-card border border-border rounded-2xl p-5">
