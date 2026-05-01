@@ -164,15 +164,16 @@ Context:
 - Small/independent brands should NOT be penalised for lacking big sustainability reports or expensive certifications. What matters is honest, specific communication about what they know and don't know.
 - For smaller brands: actively crawl their website for blog posts, founders' notes, factory pages, or pricing breakdowns that show genuine transparency — even imperfect transparency beats polished silence.
 - Confidence levels: "high" = verified third-party evidence, "medium" = partial evidence or honest first-party specifics, "low" = mostly vague brand claims, "unknown" = insufficient data.
+- WORKER TREATMENT IS A CORE SUSTAINABILITY METRIC. Research factory working conditions, wages, working hours, safety standards, union representation, and labor certification (Fair Trade, SA8000, etc.). Penalise brands with documented labor abuses or refusal to disclose factory conditions.
 
 ${knownBrandsContext}
 
 YOUR TASKS:
 1. Identify the product category from the query.
 2. Research 8-10 relevant brands — MUST include a mix of well-known brands AND small/independent brands.
-3. For each brand NOT already listed above: durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location.
+3. For each brand NOT already listed above: durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location, AND FACTORY WORKER TREATMENT (wages, conditions, certifications, documented labor practices).
 4. For top brands, find a direct product URL for "${query}" on their website.
-5. REDDIT RESEARCH (MANDATORY for any brand NOT in the pre-researched list above): Search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, or greenwashing.
+5. REDDIT RESEARCH (MANDATORY for any brand NOT in the pre-researched list above): Search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, greenwashing, or labor practices.
 
 SMALL BRAND DEEP RESEARCH (MANDATORY):
 You MUST identify at least one small/independent brand for "independent_brand_spotlight". This is a brand NOT in the same league as Norrøna, Rab, Houdini, Peak Performance, Patagonia, Arc'teryx, Fjällräven, Mammut, or similar large established brands.
@@ -189,6 +190,7 @@ SCORING FOR SMALL BRANDS — apply a different lens:
 - A small brand that documents a factory visit on their blog scores HIGHER than a large brand with a vague "audited suppliers" claim.
 - Do NOT penalise a small brand for not having Bluesign or Fair Trade certification — these cost tens of thousands of euros. Instead, reward honest acknowledgment of this gap.
 - DO penalise greenwashing even from small brands — vague "eco-friendly" or "sustainable materials" claims with zero specifics are a red flag at any size.
+- For worker treatment: a small brand that names its factories and publishes wage data or working condition notes scores HIGHER than a large brand claiming "ethical sourcing" with no specifics. Documented labor violations or refusal to disclose factory conditions are serious red flags at any size.
 
 why_chosen for the independent_brand_spotlight must quote or closely paraphrase SPECIFIC language found on their website — not generic praise. If you find a specific page or blog post where they discuss limitations, cite it.
 
@@ -198,6 +200,7 @@ TONE RULES:
 - "second_hand_advice": practical, specific — where to look, what to check, what to avoid.
 - "evidence_snippets": concrete citable facts only (e.g. "Patagonia publishes a full supplier list at patagonia.com/sourcing").
 - reddit_sentiment: summarise what real users say — good and bad. Do not sanitise negative feedback.
+- Include worker treatment insights in all relevant sections. Brands that hide factory conditions or have documented labor abuses deserve skepticism.
 
 Keep all text fields concise. Limit detailed_table to max 8 brands. Limit evidence_snippets to max 2 items per brand block.
 
