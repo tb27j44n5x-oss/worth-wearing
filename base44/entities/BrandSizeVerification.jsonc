@@ -1,0 +1,110 @@
+{
+  "name": "BrandSizeVerification",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "size_category": {
+      "type": "string",
+      "enum": [
+        "micro",
+        "small",
+        "medium",
+        "large",
+        "enterprise",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Micro: <10 employees, Small: 10-50, Medium: 50-250, Large: 250-2000, Enterprise: 2000+"
+    },
+    "estimated_employee_count": {
+      "type": "number",
+      "description": "Estimated headcount from LinkedIn, company databases, or annual reports"
+    },
+    "estimated_annual_revenue": {
+      "type": "number",
+      "description": "Annual revenue in EUR from public sources, if available"
+    },
+    "parent_company": {
+      "type": "string",
+      "description": "Name of parent/holding company if brand is a subsidiary"
+    },
+    "parent_brand_id": {
+      "type": "string",
+      "description": "ID of parent brand if verified subsidiary"
+    },
+    "is_subsidiary": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if brand is owned by larger parent"
+    },
+    "subsidiary_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Where subsidiary relationship was found (e.g., 'LinkedIn', 'Companies House', 'Ownership Registry')"
+          },
+          "evidence_url": {
+            "type": "string"
+          },
+          "verified_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "description": "Sources proving subsidiary relationship"
+    },
+    "is_ethical_sublabel": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this is an ethical/sustainable sublabel of a large brand"
+    },
+    "parent_brand_size": {
+      "type": "string",
+      "enum": [
+        "large",
+        "enterprise",
+        "unknown"
+      ],
+      "description": "Size of parent company if applicable"
+    },
+    "verification_method": {
+      "type": "string",
+      "enum": [
+        "linkedin_api",
+        "companies_house",
+        "annual_report",
+        "news_article",
+        "domain_whois",
+        "manual_research",
+        "unverified"
+      ],
+      "description": "How was size determined"
+    },
+    "credibility_score": {
+      "type": "number",
+      "description": "1-10: How confident is the size estimate (official sources score higher)"
+    },
+    "verification_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_reverification_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Re-check in ~6 months"
+    }
+  },
+  "required": [
+    "brand_id",
+    "brand_name"
+  ]
+}

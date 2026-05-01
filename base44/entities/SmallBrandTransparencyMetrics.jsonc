@@ -1,0 +1,142 @@
+{
+  "name": "SmallBrandTransparencyMetrics",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "size_category": {
+      "type": "string",
+      "enum": [
+        "micro",
+        "small",
+        "medium"
+      ]
+    },
+    "founder_accessibility": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Can customers contact founder/owner directly? Evidence of personal involvement?"
+    },
+    "honest_about_limitations": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Does founder acknowledge what they CAN'T do yet (budget, scale, certifications)?"
+    },
+    "specific_over_certified": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Does brand prefer specific claims over expensive certifications? (Valuable trait for small brands)"
+    },
+    "supply_chain_detail": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "How detailed is factory/supplier information? Names, locations, relationships?"
+    },
+    "price_transparency": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Does brand publish cost breakdowns or pricing rationale?"
+    },
+    "product_traceability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Can customer trace their specific item? Batch numbers, serialization?"
+    },
+    "community_engagement": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Active community, responds to feedback, customer stories, repair stories?"
+    },
+    "repair_first_mindset": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Does brand explicitly design for repair? Offer replacement parts, guides, services?"
+    },
+    "weighted_transparency_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Weighted average of above metrics (weights favor honesty + specificity over certification status)"
+    },
+    "score_breakdown": {
+      "type": "object",
+      "properties": {
+        "founder_accessibility_weight": {
+          "type": "number"
+        },
+        "honest_limitations_weight": {
+          "type": "number"
+        },
+        "specific_over_certified_weight": {
+          "type": "number"
+        },
+        "supply_chain_detail_weight": {
+          "type": "number"
+        },
+        "price_transparency_weight": {
+          "type": "number"
+        },
+        "product_traceability_weight": {
+          "type": "number"
+        },
+        "community_engagement_weight": {
+          "type": "number"
+        },
+        "repair_first_weight": {
+          "type": "number"
+        }
+      },
+      "description": "Weighting schema used (sums to 100)"
+    },
+    "key_strengths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Top 3 transparency strengths (e.g., 'Founder names on website', 'Publishes cost breakdown')"
+    },
+    "gaps_for_growth": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What could improve transparency (e.g., 'Could publish factory names', 'No repair guides yet')"
+    },
+    "honest_limitations_examples": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Direct quotes or examples where brand admits what they can't do (e.g., 'We can't afford Bluesign yet')"
+    },
+    "last_scored_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_review_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "brand_id",
+    "brand_name",
+    "category_key",
+    "size_category"
+  ]
+}
