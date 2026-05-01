@@ -5,6 +5,7 @@ import { useFetchData } from "@/hooks/useFetchData";
 import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
 import MobileHeader from "@/components/MobileHeader";
 import { motion } from "framer-motion";
+import LazySection from "@/components/LazySection";
 import RecommendationBlock from "@/components/recommendation/RecommendationBlock";
 import DetailedTable from "@/components/recommendation/DetailedTable";
 import SummaryHeader from "@/components/recommendation/SummaryHeader";
@@ -131,21 +132,25 @@ export default function RecommendationResult() {
               />
             )}
 
-            {/* Lifecycle stages */}
-            {result.lifecycle_stages && (
-              <LifecycleStages lifecycleData={result.lifecycle_stages} />
-            )}
+            {/* Lifecycle stages — lazy load */}
+            <LazySection fallback={<div className="h-64 bg-muted rounded-2xl animate-pulse" />}>
+              {result.lifecycle_stages && (
+                <LifecycleStages lifecycleData={result.lifecycle_stages} />
+              )}
+            </LazySection>
 
-            {/* Circular economy filter */}
-            {result.detailed_table && (
-              <CircularEconomyFilter
-                isActive={circularFilter}
-                onToggle={() => setCircularFilter(!circularFilter)}
-                brandsWithCircular={
-                  !circularFilter ? null : result.detailed_table.filter(b => (b.circularity_score || 0) > 7)
-                }
-              />
-            )}
+            {/* Circular economy filter — lazy load */}
+            <LazySection fallback={<div className="h-20 bg-muted rounded-2xl animate-pulse" />}>
+              {result.detailed_table && (
+                <CircularEconomyFilter
+                  isActive={circularFilter}
+                  onToggle={() => setCircularFilter(!circularFilter)}
+                  brandsWithCircular={
+                    !circularFilter ? null : result.detailed_table.filter(b => (b.circularity_score || 0) > 7)
+                  }
+                />
+              )}
+            </LazySection>
 
             {/* Recommendation blocks */}
             <div className="space-y-4">
@@ -183,13 +188,15 @@ export default function RecommendationResult() {
               )}
             </div>
 
-            {/* Small brand transparency */}
-            {result.independent_brand_spotlight && crawlData && (
-              <SmallBrandTransparencyView 
-                brand={result.independent_brand_spotlight.brand_name} 
-                crawlData={crawlData}
-              />
-            )}
+            {/* Small brand transparency — lazy load */}
+            <LazySection fallback={<div className="h-80 bg-secondary/20 rounded-2xl animate-pulse" />}>
+              {result.independent_brand_spotlight && crawlData && (
+                <SmallBrandTransparencyView 
+                  brand={result.independent_brand_spotlight.brand_name} 
+                  crawlData={crawlData}
+                />
+              )}
+            </LazySection>
 
             {/* Editorial principle */}
             <div className="bg-secondary/40 border border-border rounded-2xl px-6 py-5">
@@ -198,17 +205,21 @@ export default function RecommendationResult() {
               </p>
             </div>
 
-            {/* Second-hand section — shown prominently */}
-            {(result.second_hand_links?.length > 0 || result.second_hand_advice) && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
-                <SecondHandSection result={result} />
-              </div>
-            )}
+            {/* Second-hand section — lazy load */}
+            <LazySection fallback={<div className="h-40 bg-amber-50 rounded-2xl animate-pulse" />}>
+              {(result.second_hand_links?.length > 0 || result.second_hand_advice) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                  <SecondHandSection result={result} />
+                </div>
+              )}
+            </LazySection>
 
-            {/* Detailed table */}
-            {result.detailed_table?.length > 0 && (
-              <DetailedTable rows={result.detailed_table} />
-            )}
+            {/* Detailed table — lazy load */}
+            <LazySection fallback={<div className="h-96 bg-muted rounded-2xl animate-pulse" />}>
+              {result.detailed_table?.length > 0 && (
+                <DetailedTable rows={result.detailed_table} />
+              )}
+            </LazySection>
 
             {/* Evidence notes */}
             {result.evidence_notes && (
@@ -228,30 +239,38 @@ export default function RecommendationResult() {
               </div>
             )}
 
-            {/* Durability logger */}
-            {result.best_overall?.brand_name && (
-              <DurabilityLogger 
-                brandName={result.best_overall.brand_name}
-                brandId={result.best_overall.brand_id || result.best_overall.brand_name.toLowerCase().replace(/\s+/g, '_')}
-                categoryKey={result.normalized_category}
-              />
-            )}
+            {/* Durability logger — lazy load */}
+            <LazySection fallback={<div className="h-48 bg-card rounded-2xl animate-pulse" />}>
+              {result.best_overall?.brand_name && (
+                <DurabilityLogger 
+                  brandName={result.best_overall.brand_name}
+                  brandId={result.best_overall.brand_id || result.best_overall.brand_name.toLowerCase().replace(/\s+/g, '_')}
+                  categoryKey={result.normalized_category}
+                />
+              )}
+            </LazySection>
 
-            {/* Content flag form */}
-            <div className="flex justify-center">
-              <ContentFlagForm 
-                brandName={result.best_overall?.brand_name || query}
-                reportId={result.recommendation_set_id}
-              />
-            </div>
+            {/* Content flag form — lazy load */}
+            <LazySection fallback={null}>
+              <div className="flex justify-center">
+                <ContentFlagForm 
+                  brandName={result.best_overall?.brand_name || query}
+                  reportId={result.recommendation_set_id}
+                />
+              </div>
+            </LazySection>
 
-            {/* User feedback */}
-            <div className="bg-card border border-border rounded-2xl p-5">
-              <ResultFeedback query={query} recommendationSetId={result.recommendation_set_id} />
-            </div>
+            {/* User feedback — lazy load */}
+            <LazySection fallback={<div className="h-32 bg-card rounded-2xl animate-pulse" />}>
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <ResultFeedback query={query} recommendationSetId={result.recommendation_set_id} />
+              </div>
+            </LazySection>
 
-            {/* Community suggestions */}
-            <CommunitySection category={result.normalized_category} />
+            {/* Community suggestions — lazy load */}
+            <LazySection fallback={<div className="h-64 bg-muted rounded-2xl animate-pulse" />}>
+              <CommunitySection category={result.normalized_category} />
+            </LazySection>
 
             {/* Footer */}
             <div className="border-t border-border pt-6 flex items-center justify-between flex-wrap gap-3">
