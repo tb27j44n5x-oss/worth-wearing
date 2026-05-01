@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     }).then(results => results[0]).catch(() => null);
 
     const factoryLocations = crawl?.key_findings?.factory_information?.named_factories || [];
-    if (evidenceSources.length > 0 && !wageData.has_published_wage_data && factoryLocations.length === 0) {
+    if (evidenceSources.length > 0 && !wageData.has_published_wage_data && (!factoryLocations || factoryLocations.length === 0)) {
       flags.push('factory_names_withheld_from_wages');
       wageData.concerns.push('Brand does not disclose factory locations, making wage verification impossible');
     }

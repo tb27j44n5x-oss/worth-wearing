@@ -57,7 +57,8 @@ Deno.serve(async (req) => {
     for (const arg of argFields) {
       if (!arg) continue;
       const vagueCount = vaguePhrases.filter(phrase => arg.toLowerCase().includes(phrase)).length;
-      if (vagueCount > 3 && arg.toLowerCase().split(/\d+/).length < 3) {
+      const hasNumbers = /\d+/.test(arg);
+      if (vagueCount > 2 && !hasNumbers) {
         flags.push('vague_language');
         greenwashingRisk = greenwashingRisk === 'low' ? 'medium' : greenwashingRisk;
         break;

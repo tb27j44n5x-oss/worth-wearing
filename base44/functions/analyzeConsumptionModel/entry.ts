@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
     // ── 5. Price Point Contradiction ──────────────────────────────────────
     // High-sustainability claims but very low prices (unsustainable business model)
-    if (report_data.claimed_worker_ethics === 'high' || report_data.worker_score > 7) {
+    if ((report_data.worker_score && report_data.worker_score > 7) || report_data.claimed_worker_ethics === 'high') {
       if (report_data.price_point === 'low' || report_data.price_point === 'budget') {
         flags.push('unrealistic_sustainability_at_low_price');
         greenwashing_indicators.push(
@@ -139,13 +139,13 @@ Deno.serve(async (req) => {
     }
 
     // ── 8. Transparency Check ────────────────────────────────────────────
-    const isTransparent = report_data.transparency_score > 7;
+    const isTransparent = report_data.transparency_score && report_data.transparency_score > 7;
     const hasGreenMarketingFlags = flags.length > 0;
     
     let consumption_model_verdict = 'standard';
     if (hasGreenMarketingFlags && !isTransparent) {
       consumption_model_verdict = 'greenwashing_consumption_model';
-    } else if (greenwashing_indicators.some(ind => ind.includes('positive'))) {
+    } else if (isTransparent && greenwashing_indicators.some(ind => ind.includes('positive'))) {
       consumption_model_verdict = 'transparent_consumption_model';
     }
 
@@ -158,8 +158,8 @@ Deno.serve(async (req) => {
       consumption_model_score_adjustment: score_adjustment,
       recommendations: {
         marketing_analysis: greenwashing_indicators.length > 2 ? 'High greenwashing risk detected' : 'No marketing red flags',
-        durability_fit: avg_months_to_failure < 24 ? 'Market as seasonal/trend item, not sustainable' : 'Durable positioning justified',
-        repair_transparency: hasRepairProgram && avg_months_to_failure > 36 ? 'Repair program authentic' : 'Repair program contradicts durability claims'
+        durability_fit: avg_months_to_failure && avg_months_to_failure < 24 ? 'Market as seasonal/trend item, not sustainable' : 'Durable positioning justified',
+        repair_transparency: hasRepairProgram && avg_months_to_failure && avg_months_to_failure > 36 ? 'Repair program authentic' : 'Repair program contradicts durability claims'
       },
       timestamp: new Date().toISOString()
     });
