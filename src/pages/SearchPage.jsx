@@ -141,18 +141,18 @@ export default function SearchPage() {
         </motion.div>
       </section>
 
-      {/* How it works */}
+      {/* About the app */}
       <section className="max-w-3xl mx-auto px-6 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <h2 className="font-syne text-2xl font-semibold text-foreground text-center mb-8">How it works</h2>
+          <h2 className="font-syne text-2xl font-semibold text-foreground text-center mb-8">How we pick what's worth wearing</h2>
           <div className="space-y-3">
             {[
-              { step: "1", title: "Type what you're looking for", desc: "Search any clothing or gear item — 'merino base layer', 'kids rain jacket', 'leather boots'. No need to name a brand." },
-              { step: "2", title: "We research brands for you", desc: "Our tool scans evidence to evaluate brands on durability, transparency, repairability, and second-hand value — separating verified facts from marketing claims." },
-              { step: "3", title: "You get an honest recommendation", desc: "We tell you which brand is worth wearing, which is built to last, most transparent, and where to find it second-hand. We also flag what we couldn't verify." },
+              { step: "🔍", title: "We scan real evidence", desc: "We look at independent audits, certification data, repair policies, and community reviews — not just what brands say about themselves." },
+              { step: "⚖️", title: "We score on what matters", desc: "Every brand is evaluated on durability, transparency, repairability, second-hand availability, and manufacturing clarity. We flag what we couldn't verify." },
+              { step: "🏆", title: "We surface the honest picks", desc: "Our recommendation shows the best overall choice, the most durable, the most transparent, and the best second-hand option — so you can decide what matters most to you." },
             ].map(({ step, title, desc }) => (
-              <div key={step} className="flex items-start gap-4 bg-card border border-border rounded-2xl px-6 py-5">
-                <span className="w-8 h-8 rounded-full bg-accent/15 text-accent font-syne font-bold text-sm flex items-center justify-center flex-shrink-0 mt-0.5">{step}</span>
+              <div key={title} className="flex items-start gap-4 bg-card border border-border rounded-2xl px-6 py-5">
+                <span className="text-xl flex-shrink-0 mt-0.5">{step}</span>
                 <div>
                   <p className="font-syne font-semibold text-foreground text-sm mb-1">{title}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
