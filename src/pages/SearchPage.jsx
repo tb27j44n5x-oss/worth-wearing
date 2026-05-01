@@ -140,6 +140,28 @@ export default function SearchPage() {
         </motion.div>
       </section>
 
+      {/* How it works */}
+      <section className="max-w-3xl mx-auto px-6 pb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <h2 className="font-playfair text-2xl font-semibold text-foreground text-center mb-8">How it works</h2>
+          <div className="space-y-4">
+            {[
+              { step: "1", title: "Type what you're looking for", desc: "Search any clothing or gear item — 'merino base layer', 'kids rain jacket', 'leather boots'. No need to name a brand." },
+              { step: "2", title: "We research brands for you", desc: "Our AI scans the web to evaluate relevant brands on durability, transparency, repairability, and second-hand value — separating verified facts from marketing claims." },
+              { step: "3", title: "You get an honest recommendation", desc: "We tell you which brand is best overall, best for durability, best for transparency, and where to find it second-hand. We also flag what we couldn't verify." },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="flex items-start gap-4 bg-card border border-border rounded-2xl px-6 py-5">
+                <span className="w-8 h-8 rounded-full bg-primary/10 text-primary font-playfair font-bold text-sm flex items-center justify-center flex-shrink-0 mt-0.5">{step}</span>
+                <div>
+                  <p className="font-semibold text-foreground text-sm mb-1">{title}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
       {/* Feature grid */}
       <section className="max-w-5xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
