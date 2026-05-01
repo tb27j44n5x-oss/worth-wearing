@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight, Shield, Wrench, ShoppingBag, Eye, MapPin, RefreshCw, DollarSign, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useSearch } from "@/hooks/useSearch";
 
 const ROTATING_WORDS = ["jacket", "jackets", "jeans", "dress", "dresses", "t-shirt", "t-shirts", "sweater", "sweaters", "shoes"];
 
@@ -22,13 +23,13 @@ const FEATURES = [
 ];
 
 export default function SearchPage() {
-  const [query, setQuery] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
   const [country, setCountry] = useState("Norway");
   const [preference, setPreference] = useState("either");
   const [budget, setBudget] = useState("mid");
   const navigate = useNavigate();
-  const debounceTimer = useRef(null);
+
+  const { query, setQuery, handleInputChange } = useSearch(300, 3);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -42,21 +43,6 @@ export default function SearchPage() {
     if (!term) return;
     const params = new URLSearchParams({ q: term, country, preference, budget });
     navigate(`/recommendation?${params.toString()}`);
-  };
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setQuery(value);
-    
-    // Debounce: clear previous timer and set new one
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    
-    // Auto-search only if text is long enough (prevent spam on single characters)
-    if (value.length >= 3) {
-      debounceTimer.current = setTimeout(() => {
-        handleSearch(value);
-      }, 300);
-    }
   };
 
   return (
@@ -94,7 +80,7 @@ export default function SearchPage() {
               type="text"
               placeholder="Try: waterproof jacket, natural rubber wetsuit"
               value={query}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange(e.target.value, handleSearch)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="flex-1 px-3 sm:px-4 py-4 sm:py-5 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base min-w-0"
             />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useFetchData } from "@/hooks/useFetchData";
 import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
 import MobileHeader from "@/components/MobileHeader";
 import { motion } from "framer-motion";
@@ -26,40 +27,32 @@ export default function RecommendationResult() {
   const preference = searchParams.get("preference") || "either";
   const budget = searchParams.get("budget") || "mid";
 
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [circularFilter, setCircularFilter] = useState(false);
   const [crawlData, setCrawlData] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!query) return;
-    setLoading(true);
-    setError(null);
-    base44.functions.invoke("getJacketRecommendation", { query, country, preference, budget })
-      .then(res => {
-        const recommendation = res.data?.result || res.data;
-        setResult(recommendation);
-        
-        // Fetch brand website crawl data if there's an independent brand spotlight
-        if (recommendation?.independent_brand_spotlight?.brand_name) {
-          base44.entities.BrandWebsiteCrawl.filter(
-            { brand_name: recommendation.independent_brand_spotlight.brand_name },
-            "-crawl_date",
-            1
-          )
-            .then(crawls => {
-              if (crawls?.length > 0) {
-                setCrawlData(crawls[0]);
-              }
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [query, country, preference, budget]);
+  const { data: result, loading, error, refetch } = useFetchData(
+    async () => {
+      if (!query) return null;
+      const res = await base44.functions.invoke("getJacketRecommendation", { query, country, preference, budget });
+      const recommendation = res.data?.result || res.data;
+      
+      // Fetch brand website crawl data if independent brand spotlight exists
+      if (recommendation?.independent_brand_spotlight?.brand_name) {
+        base44.entities.BrandWebsiteCrawl.filter(
+          { brand_name: recommendation.independent_brand_spotlight.brand_name },
+          "-crawl_date",
+          1
+        )
+          .then(crawls => {
+            if (crawls?.length > 0) setCrawlData(crawls[0]);
+          })
+          .catch(() => {});
+      }
+      
+      return recommendation;
+    },
+    [query, country, preference, budget]
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -125,17 +118,14 @@ export default function RecommendationResult() {
                 lastResearched={result.last_researched_at}
                 evidenceFreshness={result.evidence_freshness}
                 onRefresh={async () => {
-                  setRefreshing(true);
                   try {
                     await base44.functions.invoke("researchBrand", {
                       brand_name: result.best_overall?.brand_name,
                       category: result.normalized_category
                     });
-                    setResult(prev => ({ ...prev, last_researched_at: new Date().toISOString() }));
+                    refetch();
                   } catch (err) {
                     console.error("Refresh failed:", err);
-                  } finally {
-                    setRefreshing(false);
                   }
                 }}
               />
