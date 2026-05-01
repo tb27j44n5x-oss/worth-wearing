@@ -34,37 +34,38 @@ export default function SecondHandSection({ result }) {
 
       {/* Search customization */}
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
-        <p className="text-xs font-medium text-amber-900">Search for:</p>
+        <div>
+          <p className="text-xs font-medium text-amber-900 mb-2">Searching for:</p>
+          <div className="bg-white rounded-lg px-3 py-2.5 border border-amber-200">
+            <p className="text-sm font-semibold text-amber-900">"{searchTerm}"</p>
+          </div>
+        </div>
         
-        {/* Original query option */}
-        <button
-          onClick={() => setSelectedBrand("")}
-          className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
-            !selectedBrand
-              ? "bg-amber-600 text-white border-amber-600"
-              : "bg-white text-amber-900 border-amber-200 hover:bg-amber-100"
-          }`}
-        >
-          "{result.query}"
-        </button>
-
-        {/* Brand options */}
+        {/* Brand addition options */}
         {uniqueBrands.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-amber-800 font-medium">Or a specific brand:</p>
+            <p className="text-xs text-amber-800 font-medium">Add a brand to refine search:</p>
             {uniqueBrands.map((brand) => (
               <button
                 key={brand}
-                onClick={() => setSelectedBrand(brand)}
+                onClick={() => setSelectedBrand(selectedBrand === brand ? "" : brand)}
                 className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
                   selectedBrand === brand
                     ? "bg-amber-600 text-white border-amber-600"
                     : "bg-white text-amber-900 border-amber-200 hover:bg-amber-100"
                 }`}
               >
-                {brand}
+                {selectedBrand === brand ? `✓ ${brand}` : `+ ${brand}`}
               </button>
             ))}
+            {selectedBrand && (
+              <button
+                onClick={() => setSelectedBrand("")}
+                className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border bg-white text-amber-900 border-amber-200 hover:bg-amber-100"
+              >
+                Clear brand filter
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -79,8 +80,8 @@ export default function SecondHandSection({ result }) {
 
       {/* Marketplace links */}
       {hasLinks && (
-        <div className="space-y-2">
-          <p className="text-xs text-amber-900 font-medium">Searching for: <span className="text-amber-700 font-semibold">"{searchTerm}"</span></p>
+        <div className="space-y-3">
+          <p className="text-xs text-amber-900 font-medium">Browse these platforms:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {result.second_hand_links.map((link, i) => (
               <a
