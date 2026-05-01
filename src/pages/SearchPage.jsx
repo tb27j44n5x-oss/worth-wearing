@@ -51,7 +51,7 @@ export default function SearchPage() {
           <span className="font-syne text-lg font-bold text-foreground tracking-tight">Worth Wearing</span>
           <span className="block text-[10px] text-muted-foreground tracking-widest uppercase font-inter">by Patrick Olsen.tech</span>
         </div>
-        <a href="/admin" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Admin</a>
+
       </nav>
 
       {/* Hero */}
