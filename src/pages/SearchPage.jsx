@@ -70,9 +70,6 @@ export default function SearchPage() {
             <br />worth wearing
           </h1>
 
-          <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10 font-inter">
-            Compare clothing, wetsuit, and outdoor gear brands by evidence — not marketing claims.
-          </p>
 
           {/* Search input */}
           <div className="flex items-center bg-card border border-border rounded-2xl shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all mb-4">
