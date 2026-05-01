@@ -56,6 +56,15 @@
       "type": "boolean",
       "default": false,
       "description": "Admin verification of durability claim"
+    },
+    "verified_by_email": {
+      "type": "string",
+      "description": "Admin email who verified this log"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When durability claim was verified"
     }
   },
   "required": [

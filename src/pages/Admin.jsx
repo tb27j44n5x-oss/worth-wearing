@@ -21,7 +21,20 @@ export default function Admin() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then((u) => {
+      setUser(u);
+      // Log admin access to audit trail
+      if (u?.role === 'admin') {
+        base44.asServiceRole.entities.Audit.create({
+          action: 'create',
+          entity_type: 'AdminAccess',
+          entity_id: 'session-' + Date.now(),
+          performed_by_email: u.email,
+          reason: `Admin accessed dashboard at ${new Date().toISOString()}`,
+          timestamp: new Date().toISOString()
+        }).catch(() => {}); // fail silently
+      }
+    }).catch(() => {});
   }, []);
 
   // Still loading — don't flash the admin UI

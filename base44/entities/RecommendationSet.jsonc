@@ -50,6 +50,24 @@
       "type": "boolean",
       "default": true
     },
+    "reviewed_by_email": {
+      "type": "string",
+      "description": "Admin email who reviewed this recommendation"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When recommendation was reviewed"
+    },
+    "published_by_email": {
+      "type": "string",
+      "description": "Admin email who published this recommendation"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When recommendation was published"
+    },
     "last_used_at": {
       "type": "string",
       "format": "date-time"

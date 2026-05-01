@@ -109,6 +109,19 @@
       "type": "boolean",
       "default": false,
       "description": "Admin manually verified this source"
+    },
+    "verified_by_email": {
+      "type": "string",
+      "description": "Admin email who verified this source"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When source was verified"
+    },
+    "verification_note": {
+      "type": "string",
+      "description": "Admin notes on verification"
     }
   },
   "required": [

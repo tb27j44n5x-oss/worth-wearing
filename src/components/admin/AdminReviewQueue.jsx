@@ -33,15 +33,44 @@ export default function AdminReviewQueue() {
 
   const { containerRef, pullY, isPulling, isTriggered, handlers } = usePullToRefresh(load);
 
-  // Optimistic: remove/update item immediately, sync in background
-  const archive = (item) => {
+  // Optimistic: remove/update item immediately, sync in background + audit log
+  const archive = async (item) => {
     setItems(prev => prev.filter(i => i.id !== item.id));
+    const user = await base44.auth.me().catch(() => null);
+    
     base44.entities.RecommendationSet.update(item.id, { is_ai_unreviewed: false, confidence_level: "low" });
+    
+    // Log to audit trail
+    if (user?.role === 'admin') {
+      base44.asServiceRole.entities.Audit.create({
+        action: 'archive',
+        entity_type: 'RecommendationSet',
+        entity_id: item.id,
+        performed_by_email: user.email,
+        reason: `Archived recommendation: "${item.query}"`,
+        timestamp: new Date().toISOString()
+      }).catch(() => {});
+    }
   };
 
-  const markReviewed = (item) => {
+  const markReviewed = async (item) => {
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_ai_unreviewed: false } : i));
+    const user = await base44.auth.me().catch(() => null);
+    
     base44.entities.RecommendationSet.update(item.id, { is_ai_unreviewed: false });
+    
+    // Log to audit trail
+    if (user?.role === 'admin') {
+      base44.asServiceRole.entities.Audit.create({
+        action: 'update',
+        entity_type: 'RecommendationSet',
+        entity_id: item.id,
+        performed_by_email: user.email,
+        changes: { is_ai_unreviewed: false },
+        reason: `Marked as reviewed: "${item.query}"`,
+        timestamp: new Date().toISOString()
+      }).catch(() => {});
+    }
   };
 
   if (editing) {

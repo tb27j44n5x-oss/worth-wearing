@@ -1,0 +1,49 @@
+{
+  "name": "Audit",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "create",
+        "update",
+        "delete",
+        "publish",
+        "archive",
+        "verify"
+      ],
+      "description": "Type of action performed"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Type of entity affected (e.g., BrandCategoryReport, DurabilityLog, AdminAccess)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the affected entity"
+    },
+    "performed_by_email": {
+      "type": "string",
+      "description": "Admin email who performed the action"
+    },
+    "changes": {
+      "type": "object",
+      "description": "What changed (old \u2192 new values)"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why this action was taken"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the action occurred"
+    }
+  },
+  "required": [
+    "action",
+    "entity_type",
+    "performed_by_email",
+    "timestamp"
+  ]
+}

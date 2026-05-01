@@ -43,7 +43,7 @@ function isBrandFresh(insight) {
   return age < BRAND_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000;
 }
 
-// Save brand insights from AI result into BrandCategoryInsight
+// Save brand insights from AI result into BrandCategoryInsight with retry logic
 async function saveBrandInsights(base44, categoryKey, aiResult) {
   const rows = aiResult.detailed_table || [];
   const now = new Date().toISOString();
@@ -51,53 +51,86 @@ async function saveBrandInsights(base44, categoryKey, aiResult) {
 
   const saves = rows.map(async (row) => {
     if (!row.brand_name) return;
-    // Check for existing insight to update
-    const existing = await base44.asServiceRole.entities.BrandCategoryInsight.filter({
-      brand_name: row.brand_name,
-      category_key: categoryKey,
-    }).catch(() => []);
+    
+    let retries = 0;
+    const maxRetries = 3;
+    
+    while (retries < maxRetries) {
+      try {
+        // Check for existing insight to update
+        const existing = await base44.asServiceRole.entities.BrandCategoryInsight.filter({
+          brand_name: row.brand_name,
+          category_key: categoryKey,
+        }).catch(() => []);
 
-    // Find extra data for this brand from the recommendation blocks
-    const allBlocks = [
-      aiResult.best_overall,
-      aiResult.best_for_durability,
-      aiResult.best_for_transparency,
-      aiResult.best_second_hand_choice,
-      aiResult.biggest_unknown,
-      aiResult.independent_brand_spotlight,
-    ].filter(b => b?.brand_name?.toLowerCase() === row.brand_name?.toLowerCase());
-    const blockData = allBlocks[0] || {};
+        // Find extra data for this brand from the recommendation blocks
+        const allBlocks = [
+          aiResult.best_overall,
+          aiResult.best_for_durability,
+          aiResult.best_for_transparency,
+          aiResult.best_second_hand_choice,
+          aiResult.biggest_unknown,
+          aiResult.independent_brand_spotlight,
+        ].filter(b => b?.brand_name?.toLowerCase() === row.brand_name?.toLowerCase());
+        const blockData = allBlocks[0] || {};
 
-    const payload = {
-      brand_name: row.brand_name,
-      category_key: categoryKey,
-      overall_score: row.overall_score,
-      durability_score: row.durability_score,
-      transparency_score: row.transparency_score,
-      repairability_score: row.repairability_score,
-      secondhand_score: row.secondhand_score,
-      manufacturing_clarity_score: row.manufacturing_clarity_score,
-      confidence_level: row.confidence_level || 'unknown',
-      recommended_buying_route: row.recommended_buying_route,
-      website: row.website || blockData.website || '',
-      summary_verdict: blockData.verdict || '',
-      durability_notes: blockData.main_known_evidence || '',
-      main_unknowns: blockData.main_unknown ? [blockData.main_unknown] : [],
-      main_concerns: [],
-      status: 'draft',
-      is_current: true,
-      last_researched_at: now,
-      next_refresh_due: refreshAt,
-    };
+        const payload = {
+          brand_name: row.brand_name,
+          category_key: categoryKey,
+          overall_score: row.overall_score,
+          durability_score: row.durability_score,
+          transparency_score: row.transparency_score,
+          repairability_score: row.repairability_score,
+          secondhand_score: row.secondhand_score,
+          manufacturing_clarity_score: row.manufacturing_clarity_score,
+          confidence_level: row.confidence_level || 'unknown',
+          recommended_buying_route: row.recommended_buying_route,
+          website: row.website || blockData.website || '',
+          summary_verdict: blockData.verdict || '',
+          durability_notes: blockData.main_known_evidence || '',
+          main_unknowns: blockData.main_unknown ? [blockData.main_unknown] : [],
+          main_concerns: [],
+          status: 'draft',
+          is_current: true,
+          last_researched_at: now,
+          next_refresh_due: refreshAt,
+        };
 
-    if (existing.length > 0) {
-      return base44.asServiceRole.entities.BrandCategoryInsight.update(existing[0].id, payload).catch(() => null);
-    } else {
-      return base44.asServiceRole.entities.BrandCategoryInsight.create({ ...payload, brand_id: row.brand_name.toLowerCase().replace(/\s+/g, '_') }).catch(() => null);
+        if (existing.length > 0) {
+          await base44.asServiceRole.entities.BrandCategoryInsight.update(existing[0].id, payload);
+        } else {
+          await base44.asServiceRole.entities.BrandCategoryInsight.create({ 
+            ...payload, 
+            brand_id: row.brand_name.toLowerCase().replace(/\s+/g, '_') 
+          });
+        }
+        
+        // Success — log to analytics
+        base44.analytics.track({
+          eventName: 'brand_insight_saved',
+          properties: { brand_name: row.brand_name, category_key: categoryKey }
+        });
+        
+        return;
+      } catch (err) {
+        retries++;
+        if (retries >= maxRetries) {
+          // Log failure after all retries exhausted
+          base44.analytics.track({
+            eventName: 'brand_insight_save_failed',
+            properties: {
+              brand_name: row.brand_name,
+              error: err.message,
+              retries_attempted: retries
+            }
+          });
+        }
+      }
     }
   });
 
-  await Promise.allSettled(saves);
+  const results = await Promise.allSettled(saves);
+  return results.map(r => r.status === 'fulfilled');
 }
 
 Deno.serve(async (req) => {

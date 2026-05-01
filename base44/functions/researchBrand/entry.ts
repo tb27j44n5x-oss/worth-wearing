@@ -1,5 +1,35 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const BLOCKED_DOMAINS = [
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0',
+  'internal.',
+  '192.168.',
+  '10.0.',
+  '172.16.'
+];
+
+/**
+ * Validate source URL format
+ */
+function validateSourceURL(url) {
+  if (!url) return true; // null/empty URLs are ok
+  try {
+    const parsed = new URL(url);
+    // Check protocol
+    if (!parsed.protocol.startsWith('http')) return false;
+    // Check hostname against blocked domains
+    const hostname = parsed.hostname;
+    for (const blocked of BLOCKED_DOMAINS) {
+      if (hostname.includes(blocked)) return false;
+    }
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me();
@@ -8,6 +38,11 @@ Deno.serve(async (req) => {
   }
 
   const { brand_name, brand_website, category, user_country } = await req.json();
+  
+  // Validate brand_website URL
+  if (brand_website && !validateSourceURL(brand_website)) {
+    return Response.json({ error: 'Invalid or blocked website URL' }, { status: 400 });
+  }
 
   const researchPrompt = `
 You are a rigorous sustainability research agent for ClaimCheck — a platform that helps consumers find lower-impact clothing choices.

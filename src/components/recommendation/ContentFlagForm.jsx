@@ -33,11 +33,16 @@ export default function ContentFlagForm({ brandName, reportId }) {
         return;
       }
 
+      // Hash email for GDPR compliance
+      const hashedEmail = await base44.functions.invoke("hashEmail", {
+        emails: [user.email]
+      }).then(res => res.data.hashes[0]);
+
       await base44.entities.ContentFlag.create({
         brand_id: brandName.toLowerCase().replace(/\s+/g, "_"),
         brand_name: brandName,
         report_id: reportId,
-        flagged_by_email: user.email,
+        flagged_by_email: hashedEmail,
         flag_type: form.flag_type,
         description: form.description,
         evidence_url: form.evidence_url || null,

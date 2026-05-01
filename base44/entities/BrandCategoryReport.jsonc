@@ -360,6 +360,15 @@
         }
       }
     },
+    "reviewed_by_email": {
+      "type": "string",
+      "description": "Admin email who reviewed this report"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the report was reviewed"
+    },
     "last_researched_at": {
       "type": "string",
       "format": "date-time"
