@@ -4,14 +4,14 @@ import { Search, ArrowRight, Shield, Wrench, ShoppingBag, Eye, MapPin, RefreshCw
 import { motion } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const ROTATING_WORDS = ["jacket", "hoodie", "wetsuit", "base layers", "jeans", "clothes"];
+const ROTATING_WORDS = ["jacket", "jeans", "dress", "t-shirt", "sweater", "shoes"];
 
 const EXAMPLES = [
-  "waterproof shell jacket",
-  "natural rubber wetsuit",
-  "warm winter coat",
-  "merino base layer",
-  "fleece midlayer",
+  "sustainable cotton jeans",
+  "ethical dress shirt",
+  "durable winter coat",
+  "comfortable everyday sneakers",
+  "affordable fleece sweater",
 ];
 
 const FEATURES = [
