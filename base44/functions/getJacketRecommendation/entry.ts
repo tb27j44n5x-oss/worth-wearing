@@ -171,7 +171,7 @@ ${knownBrandsContext}
 YOUR TASKS:
 1. Identify the product category from the query.
 2. Research 8-10 relevant brands — MUST include a mix of well-known brands AND small/independent brands.
-3. For each brand NOT already listed above: durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location, AND FACTORY WORKER TREATMENT (wages, conditions, certifications, documented labor practices).
+3. For each brand NOT already listed above: fabric/material type and environmental impact, durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location (PROXIMITY TO ${userCountry} is important for transport CO2), AND FACTORY WORKER TREATMENT (wages, conditions, certifications, documented labor practices).
 4. For top brands, find a direct product URL for "${query}" on their website.
 5. REDDIT RESEARCH (MANDATORY for any brand NOT in the pre-researched list above): Search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, greenwashing, or labor practices.
 
@@ -182,7 +182,8 @@ For the small brand spotlight, you MUST actively visit their website and look fo
 - Pages titled: "Our story", "Impact", "Transparency", "How we make it", "Materials", "Supply chain", "Factory visits", "Pricing breakdown", "B Corp journey", "Our footprint"
 - Blog posts or journal entries where founders or team members discuss trade-offs, challenges, or limitations honestly
 - Specific language like: "we're not there yet", "here's what we couldn't afford to fix", "we chose X even though Y would be better because Z"
-- Named factories or production partners (even one named factory is significant for a small brand)
+- Named factories or production partners with location data (proximity to ${userCountry} is a bonus)
+- Fabric/material sourcing transparency and environmental impact claims
 - Any pricing cost-breakdown transparency
 
 SCORING FOR SMALL BRANDS — apply a different lens:
@@ -191,6 +192,7 @@ SCORING FOR SMALL BRANDS — apply a different lens:
 - Do NOT penalise a small brand for not having Bluesign or Fair Trade certification — these cost tens of thousands of euros. Instead, reward honest acknowledgment of this gap.
 - DO penalise greenwashing even from small brands — vague "eco-friendly" or "sustainable materials" claims with zero specifics are a red flag at any size.
 - For worker treatment: a small brand that names its factories and publishes wage data or working condition notes scores HIGHER than a large brand claiming "ethical sourcing" with no specifics. Documented labor violations or refusal to disclose factory conditions are serious red flags at any size.
+- TRANSPORT CO2: Brands manufacturing closer to ${userCountry} should score HIGHER on environmental impact and manufacturing clarity. Calculate approximate transport distance; nearer = lower CO2 footprint from shipping.
 
 why_chosen for the independent_brand_spotlight must quote or closely paraphrase SPECIFIC language found on their website — not generic praise. If you find a specific page or blog post where they discuss limitations, cite it.
 
@@ -201,6 +203,8 @@ TONE RULES:
 - "evidence_snippets": concrete citable facts only (e.g. "Patagonia publishes a full supplier list at patagonia.com/sourcing").
 - reddit_sentiment: summarise what real users say — good and bad. Do not sanitise negative feedback.
 - Include worker treatment insights in all relevant sections. Brands that hide factory conditions or have documented labor abuses deserve skepticism.
+- When discussing fabric/materials, include specific fiber types (synthetic vs. natural, recycled content, durability expectations) and their environmental footprint. Detail any certifications like OEKO-TEX, GOTS, etc.
+- Always mention manufacturing location and estimate transport CO2 impact relative to ${userCountry}. Closer production = lower environmental cost.
 
 Keep all text fields concise. Limit detailed_table to max 8 brands. Limit evidence_snippets to max 2 items per brand block.
 
