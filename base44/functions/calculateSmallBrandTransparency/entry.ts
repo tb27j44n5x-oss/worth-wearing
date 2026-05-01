@@ -83,10 +83,13 @@ Deno.serve(async (req) => {
     const hasSpecific = founderText.match(/\d+%|factory|supplier|hours|fair wage|€|certif|audit/gi);
     const hasVague = founderText.match(/sustainable|eco|ethical|responsible|commitment/gi);
 
-    if (hasSpecific && hasSpecific.length > hasVague?.length || 0) {
+    const specCount = hasSpecific?.length || 0;
+    const vagueCount = hasVague?.length || 0;
+
+    if (specCount > vagueCount && specCount > 0) {
       metrics.specific_over_certified = 8;
       strengths.push('Prioritizes specific facts over vague sustainability terms');
-    } else if (hasSpecific) {
+    } else if (specCount > 0) {
       metrics.specific_over_certified = 5;
       gaps.push('Mix of specific and vague language (focus more on numbers, names, processes)');
     } else {
@@ -136,7 +139,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 7. Community Engagement ────────────────────────────────────
-    if (founderText.match(/community|feedback|response|customer|user|story|review/i)) {
+    if (founderText.match(/community|feedback|response|customer|user|story|review|repair story|testimonial/i)) {
       metrics.community_engagement = 7;
       strengths.push('Active community engagement and customer feedback integration');
     } else {

@@ -97,20 +97,23 @@ Deno.serve(async (req) => {
     }
 
     // ── 4. Size Categorization ─────────────────────────────────────────
-    if (!estimatedEmployees) {
+    // Only override sizeCategory if we haven't determined it from known data or domain analysis
+    if (!estimatedEmployees && sizeCategory === 'unknown') {
       // Default heuristic: small brands typically have minimal online footprint
       sizeCategory = 'small';
       credibilityScore = 2;
-    } else if (estimatedEmployees < 10) {
-      sizeCategory = 'micro';
-    } else if (estimatedEmployees < 50) {
-      sizeCategory = 'small';
-    } else if (estimatedEmployees < 250) {
-      sizeCategory = 'medium';
-    } else if (estimatedEmployees < 2000) {
-      sizeCategory = 'large';
-    } else {
-      sizeCategory = 'enterprise';
+    } else if (estimatedEmployees !== null && estimatedEmployees !== undefined) {
+      if (estimatedEmployees < 10) {
+        sizeCategory = 'micro';
+      } else if (estimatedEmployees < 50) {
+        sizeCategory = 'small';
+      } else if (estimatedEmployees < 250) {
+        sizeCategory = 'medium';
+      } else if (estimatedEmployees < 2000) {
+        sizeCategory = 'large';
+      } else {
+        sizeCategory = 'enterprise';
+      }
     }
 
     // Save to database
