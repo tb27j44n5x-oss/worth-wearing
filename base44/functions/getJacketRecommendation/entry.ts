@@ -2,11 +2,33 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const BRAND_CACHE_TTL_DAYS = 90;
 
-// Normalize query for cache key
+// Normalize query for cache key with multi-variant matching
 function normalizeQuery(query) {
-  return query.toLowerCase()
+  const cleaned = query.toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\b(a|an|the|for|and|or|with|in|of|best|good|cheap|quality)\b/g, '')
+    .trim();
+  
+  // Map variants to canonical form
+  const variants = {
+    'waterproof': ['waterproof', 'rain', 'wet weather'],
+    'jacket': ['jacket', 'coat', 'parka'],
+    'shell': ['shell', 'outer', 'layer'],
+    'fleece': ['fleece', 'insulation', 'thermal'],
+    'boot': ['boot', 'shoe', 'footwear'],
+    'glove': ['glove', 'mitten', 'hand'],
+  };
+  
+  let canonical = cleaned;
+  for (const [canonical_word, variant_list] of Object.entries(variants)) {
+    for (const variant of variant_list) {
+      if (cleaned.includes(variant)) {
+        canonical = canonical.replace(variant, canonical_word);
+      }
+    }
+  }
+  
+  return canonical
+    .replace(/\b(a|an|the|for|and|or|with|in|of|best|good|cheap|quality|mens|womens|unisex)\b/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
@@ -116,28 +138,40 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 2. Load known brand insights for this category ───────────────────────────
+  // ── 2. Load known brand insights + durability data ──────────────────────────
   // Derive category key from query for brand lookup (best-effort before AI runs)
   const roughCategoryKey = normalizedQuery;
 
-  const knownInsights = await base44.asServiceRole.entities.BrandCategoryInsight.filter({
-    category_key: roughCategoryKey,
-    is_current: true,
-  }).catch(() => []);
+  const [knownInsights, durabilityAggregates] = await Promise.all([
+    base44.asServiceRole.entities.BrandCategoryInsight.filter({
+      category_key: roughCategoryKey,
+      is_current: true,
+    }).catch(() => []),
+    base44.asServiceRole.entities.DurabilityAggregate.filter({
+      category_key: roughCategoryKey,
+    }).catch(() => [])
+  ]);
 
   const freshInsights = knownInsights.filter(isBrandFresh);
 
-  // Build the "already known" context block to inject into the prompt
+  // Build the "already known" context block + real durability data to inject into the prompt
   let knownBrandsContext = '';
   if (freshInsights.length > 0) {
     const lines = freshInsights.map(b => {
-      return `- ${b.brand_name}: overall=${b.overall_score}, durability=${b.durability_score}, transparency=${b.transparency_score}, repairability=${b.repairability_score}, secondhand=${b.secondhand_score}, mfg_clarity=${b.manufacturing_clarity_score}, confidence=${b.confidence_level}, route=${b.recommended_buying_route}, website=${b.website}. Summary: ${b.summary_verdict || 'N/A'}`;
+      const durability = durabilityAggregates.find(d => d.brand_name === b.brand_name);
+      const durabilityNote = durability ? ` [User data: ${durability.avg_months_to_failure ? Math.round(durability.avg_months_to_failure) + ' months avg lifespan' : 'limited data'}]` : '';
+      return `- ${b.brand_name}: overall=${b.overall_score}, durability=${b.durability_score}, transparency=${b.transparency_score}, repairability=${b.repairability_score}, secondhand=${b.secondhand_score}, mfg_clarity=${b.manufacturing_clarity_score}, confidence=${b.confidence_level}, route=${b.recommended_buying_route}, website=${b.website}. Summary: ${b.summary_verdict || 'N/A'}${durabilityNote}`;
     });
     knownBrandsContext = `
 PREVIOUSLY RESEARCHED BRANDS (valid for up to ${BRAND_CACHE_TTL_DAYS} days — do NOT re-research these from scratch):
 The following brands have already been researched for the "${roughCategoryKey}" category. Re-use these scores and notes directly in your detailed_table output. Only update them if you have strong new contradicting evidence.
 
 ${lines.join('\n')}
+
+REAL USER DURABILITY DATA (from DurabilityLog aggregates):
+Use this data to verify or update durability_score. If a brand claims "10-year lifespan" but user data shows average 18-month failure rate, flag greenwashing and penalise durability_score.
+
+${durabilityAggregates.map(d => `- ${d.brand_name}: ${d.avg_months_to_failure ? Math.round(d.avg_months_to_failure) + ' months average lifespan' : 'insufficient data'}, failure_rate=${(d.failure_rate || 0).toFixed(1)}%, repair_success=${(d.repair_success_rate || 0).toFixed(1)}%, common failures: ${d.most_common_failures?.map(f => f.type).join(', ') || 'unknown'}`).join('\n')}
 
 For brands listed above: copy their scores into detailed_table as-is. Focus your live internet research time on brands NOT listed above, or on finding a product_url for the top picks.
 `;
@@ -184,18 +218,22 @@ Weight sources by credibility, NOT equally:
 - Reddit (1-3): Self-selected opinions, unverified, extreme views; use only for "product popularity" NOT sustainability claims
 
 When citing evidence, ALWAYS mention the source type and why you trust it. Flags greenwashing when:
-- Brand makes claims but refuses to name factories
-- Uses vague language ("eco-friendly" without definition)
+- Brand makes claims but refuses to name factories (worker treatment especially opaque = red flag)
+- Uses vague language ("eco-friendly", "ethical", "responsible" without definition or wage data)
 - Has low credibility evidence but high confidence
 - No independent verification available
+- Claims "living wage" or "ethical sourcing" with zero factory disclosure (auto-penalty: -3 worker score)
 
-WORKER ETHICS SCORE (0-10):
-- 9-10: Published wage data, named factories, Fair Trade/SA8000 cert, union support
-- 7-8: Named factories, decent working condition reports, active compliance monitoring
-- 5-6: Audited suppliers but limited transparency, some wage info available
-- 3-4: Vague "ethical sourcing" claims, no specific factory names
-- 1-2: Documented labor violations, refusal to disclose, greenwashing on workers
-- 0: Active labor abuse, forced labor evidence
+WORKER ETHICS SCORE (0-10) — WAGE VERIFICATION MANDATORY:
+- 9-10: Published wage data with specific €/hourly rates, named factories, Fair Trade/SA8000 cert, union support, transparent audits
+- 7-8: Named factories with working condition reports, active auditor access, living wage claims with evidence
+- 5-6: Audited suppliers disclosed, some wage info available, but not fully transparent on rates
+- 3-4: Vague "ethical sourcing" claims, no specific factory names, no wage data
+- 1-2: Documented labor violations, factory refusal to disclose locations/wages, greenwashing on workers
+- 0: Active labor abuse, forced labor evidence, actively hiding factory conditions
+
+CRITICAL: If a brand claims "living wage" but won't publish factory names or wage data, score ≤ 4. No exceptions.
+Use verifyWorkerWages function to cross-check wage claims against evidence sources.
 
 GREENWASHING RISK FLAG:
 Return "low" if: high confidence, weighted evidence, multiple independent sources
@@ -246,7 +284,11 @@ TONE RULES:
 - Include worker treatment insights in all relevant sections. Brands that hide factory conditions or have documented labor abuses deserve skepticism.
 - MATERIAL STAGE: Always specify fiber type, durability (years of expected use), certifications (credibility score), recyclability, toxins (dyes, PFOA, etc.), water footprint. Distinguish: 100% polyester that lasts 10 years can have LOWER total footprint than 100% organic cotton lasting 2 years.
 - MANUFACTURING STAGE: Location, energy sources, chemical/dye processes, water treatment, worker wages/conditions (dedicated worker_score).
-- TRANSPORT STAGE: Manufacturing origin distance, shipping mode, estimated CO2. Admit limits: "Assuming sea shipping" vs "Verified" mode.
+- TRANSPORT STAGE: Manufacturing origin distance, shipping mode, estimated CO2. 
+  * CRITICAL: Use the calculateTransportCO2 function to estimate actual CO2 from manufacturing country to ${userCountry}.
+  * Sea shipping ~10g CO2/kg (most common). Air shipping ~255g CO2/kg (only for fast-fashion/drop shipments).
+  * Always state assumption: "Estimated via sea shipping" vs "Verified air shipment".
+  * Example: Vietnam to Norway at 0.5kg via sea = ~12g CO2. Via air = ~64g CO2. Show both if mode uncertain.
 - USE STAGE: Lifespan expectation, repair services, warranty, design-for-longevity, user durability data (from DurabilityLog entity).
 - END-OF-LIFE STAGE: Recycling programs, take-back schemes, microfiber risk, biodegradability, circular economy design.
 - SOURCE WEIGHTING: Cite source credibility. If a claim relies only on brand marketing, say "Brand claims (unverified)" not "Evidence shows..."

@@ -64,16 +64,39 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Flag factory information gaps for worker score
-    if (report_data.worker_score < 5) {
-      const crawl = await base44.asServiceRole.entities.BrandWebsiteCrawl.filter({
-        brand_id
-      }).then(results => results[0]);
+    // Flag factory information gaps for worker score (CRITICAL)
+    const crawl = await base44.asServiceRole.entities.BrandWebsiteCrawl.filter({
+      brand_id
+    }).then(results => results[0]).catch(() => null);
 
-      if (!crawl || !crawl.key_findings?.factory_information?.named_factories?.length) {
-        flags.push('factory_names_withheld');
+    const namedFactories = crawl?.key_findings?.factory_information?.named_factories?.length || 0;
+    
+    if (report_data.worker_argument && namedFactories === 0) {
+      flags.push('factory_names_withheld');
+      greenwashingRisk = 'high'; // Auto-elevate to high if worker claims exist but no factory disclosure
+      claimsNeedingReview.push({
+        claim: `Worker ethics claimed ("${report_data.worker_argument?.substring(0, 50)}...") but factory locations not disclosed`,
+        reason: 'unverified_wage_claim',
+        priority: 'high'
+      });
+    }
+    
+    // Check if worker_score > 5 but no wage data published
+    if (report_data.worker_score > 5) {
+      const workerSources = evidenceSources.filter(e => e.claim_category === 'worker_ethics');
+      const hasWageData = workerSources.some(s => 
+        s.summary?.includes('wage') || 
+        s.summary?.includes('hourly') || 
+        s.summary?.includes('salary') ||
+        s.summary?.includes('€') ||
+        s.summary?.includes('$')
+      );
+      
+      if (!hasWageData && namedFactories === 0) {
+        flags.push('wage_claim_greenwashing');
+        greenwashingRisk = greenwashingRisk === 'high' ? 'high' : 'medium';
         claimsNeedingReview.push({
-          claim: `Worker score of ${report_data.worker_score}/10 reported but factory locations not disclosed`,
+          claim: `Worker score ${report_data.worker_score}/10 claimed but no wage data found and factories not named`,
           reason: 'unverified_wage_claim',
           priority: 'high'
         });
