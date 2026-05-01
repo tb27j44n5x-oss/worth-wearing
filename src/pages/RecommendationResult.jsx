@@ -37,7 +37,10 @@ export default function RecommendationResult() {
       <MobileHeader title={query ? `"${query}"` : "Results"} />
       {/* Desktop Nav */}
       <nav className="hidden md:flex items-center justify-between px-6 py-5 max-w-5xl mx-auto border-b border-border">
-        <Link to="/" className="font-playfair text-xl font-bold text-primary tracking-tight">ClaimCheck</Link>
+        <div>
+          <span className="font-syne text-base font-bold text-foreground tracking-tight">Worth Wearing</span>
+          <span className="block text-[10px] text-muted-foreground tracking-widest uppercase">by Patrick Olsen.tech</span>
+        </div>
         <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={14} /> New search
         </Link>
@@ -46,8 +49,8 @@ export default function RecommendationResult() {
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Query header */}
         <div className="mb-8">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Recommendation for</p>
-          <h1 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">"{query}"</h1>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2 font-inter">Worth Wearing research</p>
+          <h1 className="font-syne text-3xl md:text-4xl font-bold text-foreground">"{query}"</h1>
           <p className="text-sm text-muted-foreground mt-1">{country} · {preference === "secondhand" ? "Second-hand only" : preference === "new" ? "Buying new" : "New or second-hand"} · {budget} budget</p>
         </div>
 
@@ -55,7 +58,7 @@ export default function RecommendationResult() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Loader2 className="animate-spin text-primary mb-4" size={36} />
-            <p className="font-playfair text-xl text-foreground mb-2">Researching brands...</p>
+            <p className="font-syne text-xl font-semibold text-foreground mb-2">Researching brands…</p>
             <p className="text-sm text-muted-foreground max-w-sm">
               Looking for solid evidence — not just marketing claims. This takes a moment.
             </p>
@@ -80,24 +83,31 @@ export default function RecommendationResult() {
 
             {/* 5 recommendation blocks */}
             <div className="space-y-4">
-              <h2 className="font-playfair text-2xl font-semibold text-foreground">Recommendations</h2>
+              <h2 className="font-syne text-2xl font-semibold text-foreground">Our picks</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {result.best_overall && (
-                  <RecommendationBlock block={result.best_overall} label="Best overall" highlight />
+                  <RecommendationBlock block={result.best_overall} label="Worth Wearing pick" highlight />
                 )}
                 {result.best_for_durability && (
-                  <RecommendationBlock block={result.best_for_durability} label="Best for durability" />
+                  <RecommendationBlock block={result.best_for_durability} label="Built to last" />
                 )}
                 {result.best_for_transparency && (
-                  <RecommendationBlock block={result.best_for_transparency} label="Best for transparency" />
+                  <RecommendationBlock block={result.best_for_transparency} label="Most transparent" />
                 )}
                 {result.best_second_hand_choice && (
-                  <RecommendationBlock block={result.best_second_hand_choice} label="Best second-hand choice" icon="secondhand" />
+                  <RecommendationBlock block={result.best_second_hand_choice} label="Best found second-hand" icon="secondhand" />
                 )}
               </div>
               {result.biggest_unknown && (
-                <RecommendationBlock block={result.biggest_unknown} label="Biggest unknown" icon="unknown" fullWidth />
+                <RecommendationBlock block={result.biggest_unknown} label="What we still don't know" icon="unknown" fullWidth />
               )}
+            </div>
+
+            {/* Editorial principle */}
+            <div className="bg-secondary/40 border border-border rounded-2xl px-6 py-5">
+              <p className="text-sm text-muted-foreground leading-relaxed italic">
+                "Not enough evidence is not the same as bad practice. Worth Wearing separates evidence gaps from actual concerns."
+              </p>
             </div>
 
             {/* Second-hand section — shown prominently */}
@@ -139,9 +149,12 @@ export default function RecommendationResult() {
             <CommunitySection category={result.normalized_category} />
 
             {/* Footer */}
-            <div className="border-t border-border pt-6 flex justify-end">
+            <div className="border-t border-border pt-6 flex items-center justify-between flex-wrap gap-3">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-syne font-medium text-foreground">Worth Wearing</span> — by Patrick Olsen.tech
+              </p>
               <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-                <ArrowLeft size={14} /> Start a new search
+                <ArrowLeft size={14} /> New search
               </Link>
             </div>
           </motion.div>

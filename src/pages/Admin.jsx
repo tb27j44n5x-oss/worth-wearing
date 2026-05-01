@@ -48,7 +48,7 @@ export default function Admin() {
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="mb-8">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Administration</p>
-          <h1 className="font-playfair text-4xl font-bold text-foreground">Admin Dashboard</h1>
+          <h1 className="font-syne text-4xl font-bold text-foreground">Admin Dashboard</h1>
         </div>
 
         {/* Tabs */}

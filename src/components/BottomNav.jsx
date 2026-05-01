@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: "/admin", icon: Settings, label: "Admin" },
 ];
 
+
 export default function BottomNav() {
   const { pathname } = useLocation();
 

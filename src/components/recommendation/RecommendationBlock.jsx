@@ -29,10 +29,10 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
       {/* Label + confidence */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${isUnknown ? "text-muted-foreground" : isSecondhand ? "text-amber-700" : highlight ? "text-primary" : "text-muted-foreground"}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wide mb-1 font-syne ${isUnknown ? "text-muted-foreground" : isSecondhand ? "text-accent" : highlight ? "text-primary" : "text-muted-foreground"}`}>
             {label}
           </p>
-          <h3 className="font-playfair text-xl font-bold text-foreground">{block.brand_name}</h3>
+          <h3 className="font-syne text-xl font-bold text-foreground">{block.brand_name}</h3>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${confidenceStyle} flex-shrink-0`}>
           {block.evidence_confidence || "unknown"} confidence
@@ -49,12 +49,12 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
 
       {/* Second-hand specific advice */}
       {isSecondhand && (block.secondhand_why || block.secondhand_tips) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1.5">
+        <div className="bg-secondary/50 border border-border rounded-xl p-3 space-y-1.5">
           {block.secondhand_why && (
-            <p className="text-xs font-medium text-amber-800">{block.secondhand_why}</p>
+            <p className="text-xs font-medium text-foreground">{block.secondhand_why}</p>
           )}
           {block.secondhand_tips && (
-            <p className="text-xs text-amber-700 leading-snug">Tip: {block.secondhand_tips}</p>
+            <p className="text-xs text-muted-foreground leading-snug">Tip: {block.secondhand_tips}</p>
           )}
         </div>
       )}

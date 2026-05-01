@@ -23,7 +23,7 @@ export default function DetailedTable({ rows }) {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="font-playfair text-2xl font-semibold text-foreground">Detailed comparison</h2>
+        <h2 className="font-syne text-2xl font-semibold text-foreground">Detailed comparison</h2>
         <p className="text-xs text-muted-foreground mt-1">Scores are 0–10. Lower scores do not always mean a brand is bad — they may reflect limited public evidence.</p>
       </div>
       <div className="bg-card border border-border rounded-2xl overflow-x-auto">

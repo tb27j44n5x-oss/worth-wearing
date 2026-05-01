@@ -13,8 +13,9 @@ export default function NavBar() {
   return (
     <nav className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6">
-        <Link to="/" className="font-playfair text-lg font-bold text-primary tracking-tight flex-shrink-0">
-          ClaimCheck
+        <Link to="/" className="flex-shrink-0">
+          <span className="font-syne text-base font-bold text-foreground tracking-tight">Worth Wearing</span>
+          <span className="block text-[9px] text-muted-foreground tracking-widest uppercase leading-none">by Patrick Olsen.tech</span>
         </Link>
         <div className="flex-1 flex items-center bg-muted rounded-xl overflow-hidden max-w-xl">
           <Search size={16} className="ml-3 text-muted-foreground flex-shrink-0" />

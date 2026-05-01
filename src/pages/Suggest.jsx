@@ -74,7 +74,7 @@ export default function Suggest() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-sm px-6">
-          <h1 className="font-playfair text-2xl font-bold text-foreground mb-3">Login required</h1>
+          <h1 className="font-syne text-2xl font-bold text-foreground mb-3">Login required</h1>
           <p className="text-muted-foreground mb-6">You need to be logged in to submit suggestions or corrections.</p>
           <button
             onClick={() => base44.auth.redirectToLogin(window.location.href)}
@@ -92,7 +92,7 @@ export default function Suggest() {
       <NavBar />
       <div className="max-w-2xl mx-auto px-6 py-16">
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Community</p>
-        <h1 className="font-playfair text-4xl font-bold text-foreground mb-3">Suggest or correct</h1>
+        <h1 className="font-syne text-4xl font-bold text-foreground mb-3">Suggest or correct</h1>
         <p className="text-muted-foreground mb-10 leading-relaxed">
           Know a brand we missed? Have better evidence? Experienced a repair process — good or bad? 
           Your input goes to our admin review queue. All suggestions are manually verified.
@@ -101,7 +101,7 @@ export default function Suggest() {
         {submitted ? (
           <div className="bg-card border border-border rounded-2xl p-10 text-center">
             <CheckCircle className="text-emerald-600 mx-auto mb-4" size={40} />
-            <h2 className="font-playfair text-2xl font-semibold text-foreground mb-2">Thank you</h2>
+            <h2 className="font-syne text-2xl font-semibold text-foreground mb-2">Thank you</h2>
             <p className="text-muted-foreground">Your submission has been added to the admin review queue. We will verify it before publishing any changes.</p>
           </div>
         ) : (

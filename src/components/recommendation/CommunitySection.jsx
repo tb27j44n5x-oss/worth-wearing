@@ -81,7 +81,7 @@ export default function CommunitySection({ category }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="font-playfair text-2xl font-semibold text-foreground">Community suggestions</h2>
+          <h2 className="font-syne text-2xl font-semibold text-foreground">Community suggestions</h2>
           <p className="text-sm text-muted-foreground mt-1">Know a brand we missed? Suggest it — we'll research it automatically.</p>
         </div>
         {!showForm && (

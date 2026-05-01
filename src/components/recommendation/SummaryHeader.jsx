@@ -16,7 +16,7 @@ export default function SummaryHeader({ result }) {
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Our take</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 font-inter">Our take</p>
             <p className="text-base text-foreground leading-relaxed">{result.summary_verdict}</p>
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
@@ -54,16 +54,16 @@ export default function SummaryHeader({ result }) {
       {(result.what_we_know?.length > 0 || result.what_we_dont_know?.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {result.what_we_know?.length > 0 && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-3">
+            <div className="bg-secondary/50 border border-border rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <CheckCircle size={14} className="text-emerald-600 flex-shrink-0" />
-                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">What we found evidence for</p>
+                <CheckCircle size={14} className="text-accent flex-shrink-0" />
+                <p className="text-xs font-semibold text-foreground uppercase tracking-wide font-syne">What we found evidence for</p>
               </div>
               <ul className="space-y-2">
                 {result.what_we_know.map((item, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="text-emerald-500 font-bold text-xs mt-0.5 flex-shrink-0">–</span>
-                    <span className="text-xs text-emerald-900 leading-snug">{item}</span>
+                    <span className="text-accent font-bold text-xs mt-0.5 flex-shrink-0">–</span>
+                    <span className="text-xs text-foreground leading-snug">{item}</span>
                   </li>
                 ))}
               </ul>
