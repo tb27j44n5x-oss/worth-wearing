@@ -29,7 +29,7 @@ export default function SearchPage() {
   const [budget, setBudget] = useState("mid");
   const navigate = useNavigate();
 
-  const { query, setQuery, handleInputChange } = useSearch(300, 3);
+  const { query, setQuery, handleInputChange } = useSearch(500, 5);
 
   useEffect(() => {
     const interval = setInterval(() => {
