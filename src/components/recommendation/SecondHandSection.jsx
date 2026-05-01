@@ -19,7 +19,7 @@ export default function SecondHandSection({ result }) {
   ].filter(Boolean);
 
   const uniqueBrands = [...new Set(brandOptions)];
-  const searchTerm = selectedBrand || result.query || "";
+  const searchTerm = selectedBrand ? `${result.query} ${selectedBrand}` : result.query || "";
 
   const buildSearchUrl = (url) => {
     return url.includes("?") ? `${url}&q=${encodeURIComponent(searchTerm)}` : `${url}?q=${encodeURIComponent(searchTerm)}`;
