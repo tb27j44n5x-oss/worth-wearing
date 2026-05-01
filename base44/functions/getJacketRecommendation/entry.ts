@@ -387,6 +387,13 @@ SMALL BRANDS: Reward honesty about limitations. "we can't afford Bluesign yet" >
   }
 
   // ── 5. Guarantee second-hand links ──────────────────────────────────────────
+  if (!aiResult) {
+    return Response.json({
+      error: 'Research failed: AI returned empty result.',
+      detail: 'No data was returned from the research process.'
+    }, { status: 500 });
+  }
+
   const encodedQuery = encodeURIComponent(query);
   const guaranteedLinks = [
     { platform: 'Finn.no', search_url: `https://www.finn.no/bap/forsale/search.html?q=${encodedQuery}`, note: 'Norwegian marketplace' },
@@ -394,9 +401,9 @@ SMALL BRANDS: Reward honesty about limitations. "we can't afford Bluesign yet" >
     { platform: 'Vinted', search_url: `https://www.vinted.no/catalog?search_text=${encodedQuery}`, note: 'Clothing-focused' },
     { platform: 'Facebook Marketplace', search_url: `https://www.facebook.com/marketplace/search/?query=${encodedQuery}`, note: 'Local listings' },
   ];
-  const existingPlatforms = new Set((aiResult.second_hand_links || []).filter(l => l?.platform).map(l => l.platform.toLowerCase()));
+  const existingPlatforms = new Set((aiResult?.second_hand_links || []).filter(l => l?.platform).map(l => l.platform.toLowerCase()));
   const mergedLinks = [
-    ...(aiResult.second_hand_links || []),
+    ...(aiResult?.second_hand_links || []),
     ...guaranteedLinks.filter(g => !existingPlatforms.has(g.platform.toLowerCase()))
   ];
 

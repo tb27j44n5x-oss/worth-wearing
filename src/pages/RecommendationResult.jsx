@@ -32,19 +32,6 @@ export default function RecommendationResult() {
   const [crawlData, setCrawlData] = useState(null);
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    if (!loading) return;
-    
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) return 90;
-        return prev + Math.random() * 25;
-      });
-    }, 800);
-
-    return () => clearInterval(interval);
-  }, [loading]);
-
   const { data: result, loading, error, refetch } = useFetchData(
     async () => {
       if (!query) return null;
@@ -68,6 +55,19 @@ export default function RecommendationResult() {
     },
     [query, country, preference, budget]
   );
+
+  useEffect(() => {
+    if (!loading) return;
+    
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return 90;
+        return prev + Math.random() * 25;
+      });
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, [loading]);
 
   return (
     <div className="min-h-screen bg-background">
