@@ -72,21 +72,22 @@ export default function SearchPage() {
 
           {/* Search input */}
           <div className="flex items-center bg-card border border-border rounded-2xl shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/30 transition-all mb-4">
-            <Search className="ml-5 text-muted-foreground flex-shrink-0" size={20} />
+            <Search className="ml-4 text-muted-foreground flex-shrink-0" size={18} />
             <input
               type="text"
-              placeholder="e.g. I need a waterproof shell jacket"
+              placeholder="e.g. waterproof shell jacket"
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="flex-1 px-4 py-5 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-base"
+              className="flex-1 px-3 py-4 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-base min-w-0"
             />
             <button
               onClick={() => handleSearch()}
               disabled={!query.trim()}
-              className="m-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors flex items-center gap-2"
+              className="m-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors flex items-center gap-1.5 flex-shrink-0"
             >
-              Research <ArrowRight size={16} />
+              <span className="hidden sm:inline">Research</span>
+              <ArrowRight size={16} />
             </button>
           </div>
 
