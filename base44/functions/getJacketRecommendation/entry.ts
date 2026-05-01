@@ -1,5 +1,83 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const BRAND_CACHE_TTL_DAYS = 90;
+
+// Normalize query for cache key
+function normalizeQuery(query) {
+  return query.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\b(a|an|the|for|and|or|with|in|of|best|good|cheap|quality)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .sort()
+    .join('_');
+}
+
+// Check if a brand insight is still fresh (within TTL)
+function isBrandFresh(insight) {
+  if (!insight.last_researched_at) return false;
+  const age = Date.now() - new Date(insight.last_researched_at).getTime();
+  return age < BRAND_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000;
+}
+
+// Save brand insights from AI result into BrandCategoryInsight
+async function saveBrandInsights(base44, categoryKey, aiResult) {
+  const rows = aiResult.detailed_table || [];
+  const now = new Date().toISOString();
+  const refreshAt = new Date(Date.now() + BRAND_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const saves = rows.map(async (row) => {
+    if (!row.brand_name) return;
+    // Check for existing insight to update
+    const existing = await base44.asServiceRole.entities.BrandCategoryInsight.filter({
+      brand_name: row.brand_name,
+      category_key: categoryKey,
+    }).catch(() => []);
+
+    // Find extra data for this brand from the recommendation blocks
+    const allBlocks = [
+      aiResult.best_overall,
+      aiResult.best_for_durability,
+      aiResult.best_for_transparency,
+      aiResult.best_second_hand_choice,
+      aiResult.biggest_unknown,
+      aiResult.independent_brand_spotlight,
+    ].filter(b => b?.brand_name?.toLowerCase() === row.brand_name?.toLowerCase());
+    const blockData = allBlocks[0] || {};
+
+    const payload = {
+      brand_name: row.brand_name,
+      category_key: categoryKey,
+      overall_score: row.overall_score,
+      durability_score: row.durability_score,
+      transparency_score: row.transparency_score,
+      repairability_score: row.repairability_score,
+      secondhand_score: row.secondhand_score,
+      manufacturing_clarity_score: row.manufacturing_clarity_score,
+      confidence_level: row.confidence_level || 'unknown',
+      recommended_buying_route: row.recommended_buying_route,
+      website: row.website || blockData.website || '',
+      summary_verdict: blockData.verdict || '',
+      durability_notes: blockData.main_known_evidence || '',
+      main_unknowns: blockData.main_unknown ? [blockData.main_unknown] : [],
+      main_concerns: [],
+      status: 'draft',
+      is_current: true,
+      last_researched_at: now,
+      next_refresh_due: refreshAt,
+    };
+
+    if (existing.length > 0) {
+      return base44.asServiceRole.entities.BrandCategoryInsight.update(existing[0].id, payload).catch(() => null);
+    } else {
+      return base44.asServiceRole.entities.BrandCategoryInsight.create({ ...payload, brand_id: row.brand_name.toLowerCase().replace(/\s+/g, '_') }).catch(() => null);
+    }
+  });
+
+  await Promise.allSettled(saves);
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
@@ -10,18 +88,9 @@ Deno.serve(async (req) => {
   }
 
   const userCountry = country || 'Norway';
+  const normalizedQuery = normalizeQuery(query);
 
-  // ── 1. Check cache ──────────────────────────────────────────────────────────
-  // Normalize aggressively so cache hits reliably (strip plurals, sort words, etc.)
-  const normalizedQuery = query.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\b(a|an|the|for|and|or|with|in|of|best|good|cheap|quality)\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .split(' ')
-    .sort()
-    .join('_');
-
+  // ── 1. Check full-result cache ───────────────────────────────────────────────
   const existing = await base44.asServiceRole.entities.RecommendationSet.filter({ normalized_query: normalizedQuery });
 
   if (existing.length > 0) {
@@ -47,7 +116,34 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 2. Build prompt ─────────────────────────────────────────────────────────
+  // ── 2. Load known brand insights for this category ───────────────────────────
+  // Derive category key from query for brand lookup (best-effort before AI runs)
+  const roughCategoryKey = normalizedQuery;
+
+  const knownInsights = await base44.asServiceRole.entities.BrandCategoryInsight.filter({
+    category_key: roughCategoryKey,
+    is_current: true,
+  }).catch(() => []);
+
+  const freshInsights = knownInsights.filter(isBrandFresh);
+
+  // Build the "already known" context block to inject into the prompt
+  let knownBrandsContext = '';
+  if (freshInsights.length > 0) {
+    const lines = freshInsights.map(b => {
+      return `- ${b.brand_name}: overall=${b.overall_score}, durability=${b.durability_score}, transparency=${b.transparency_score}, repairability=${b.repairability_score}, secondhand=${b.secondhand_score}, mfg_clarity=${b.manufacturing_clarity_score}, confidence=${b.confidence_level}, route=${b.recommended_buying_route}, website=${b.website}. Summary: ${b.summary_verdict || 'N/A'}`;
+    });
+    knownBrandsContext = `
+PREVIOUSLY RESEARCHED BRANDS (valid for up to ${BRAND_CACHE_TTL_DAYS} days — do NOT re-research these from scratch):
+The following brands have already been researched for the "${roughCategoryKey}" category. Re-use these scores and notes directly in your detailed_table output. Only update them if you have strong new contradicting evidence.
+
+${lines.join('\n')}
+
+For brands listed above: copy their scores into detailed_table as-is. Focus your live internet research time on brands NOT listed above, or on finding a product_url for the top picks.
+`;
+  }
+
+  // ── 3. Build prompt ──────────────────────────────────────────────────────────
   const budgetNote = budget === 'low' ? 'Focus on affordable options under €150.' :
     budget === 'premium' ? 'Include premium/high-end options €300+.' :
     'Mid-range options €100–300.';
@@ -69,12 +165,14 @@ Context:
 - For smaller brands: actively crawl their website for blog posts, founders' notes, factory pages, or pricing breakdowns that show genuine transparency — even imperfect transparency beats polished silence.
 - Confidence levels: "high" = verified third-party evidence, "medium" = partial evidence or honest first-party specifics, "low" = mostly vague brand claims, "unknown" = insufficient data.
 
+${knownBrandsContext}
+
 YOUR TASKS:
 1. Identify the product category from the query.
 2. Research 8-10 relevant brands — MUST include a mix of well-known brands AND small/independent brands.
-3. For each brand: durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location.
+3. For each brand NOT already listed above: durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location.
 4. For top brands, find a direct product URL for "${query}" on their website.
-5. REDDIT RESEARCH (MANDATORY): For each shortlisted brand, search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, or greenwashing.
+5. REDDIT RESEARCH (MANDATORY for any brand NOT in the pre-researched list above): Search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, or greenwashing.
 
 SMALL BRAND DEEP RESEARCH (MANDATORY):
 You MUST identify at least one small/independent brand for "independent_brand_spotlight". This is a brand NOT in the same league as Norrøna, Rab, Houdini, Peak Performance, Patagonia, Arc'teryx, Fjällräven, Mammut, or similar large established brands.
@@ -134,7 +232,8 @@ OUTPUT as JSON:
       "transparency_score": number, "repairability_score": number,
       "secondhand_score": number, "manufacturing_clarity_score": number,
       "confidence_level": "high"|"medium"|"low"|"unknown",
-      "recommended_buying_route": string, "is_reviewed": false, "website": string
+      "recommended_buying_route": string, "is_reviewed": false, "website": string,
+      "reddit_sentiment": string
     }
   ],
   "second_hand_links": [
@@ -154,10 +253,9 @@ OUTPUT as JSON:
   }
 }
 
-REDDIT SENTIMENT — for each brand block in detailed_table, also include:
+REDDIT SENTIMENT — for each brand block in detailed_table NOT already in the pre-researched list, also include:
   "reddit_sentiment": string (1-2 sentences — what r/BuyItForLife and relevant subreddits actually say. Include specific praise AND complaints.)
 `;
-
 
   const jsonSchema = {
     type: 'object',
@@ -255,7 +353,7 @@ REDDIT SENTIMENT — for each brand block in detailed_table, also include:
     }
   };
 
-  // ── 3. Run AI research (with retry on JSON failure) ─────────────────────────
+  // ── 4. Run AI research ───────────────────────────────────────────────────────
   let aiResult;
   try {
     aiResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -265,7 +363,6 @@ REDDIT SENTIMENT — for each brand block in detailed_table, also include:
       response_json_schema: jsonSchema
     });
   } catch (firstErr) {
-    // Retry once with gemini as fallback
     try {
       aiResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt,
@@ -281,7 +378,7 @@ REDDIT SENTIMENT — for each brand block in detailed_table, also include:
     }
   }
 
-  // ── 4. Guarantee second-hand links ──────────────────────────────────────────
+  // ── 5. Guarantee second-hand links ──────────────────────────────────────────
   const encodedQuery = encodeURIComponent(query);
   const guaranteedLinks = [
     { platform: 'Finn.no', search_url: `https://www.finn.no/bap/forsale/search.html?q=${encodedQuery}`, note: 'Norwegian marketplace' },
@@ -297,18 +394,23 @@ REDDIT SENTIMENT — for each brand block in detailed_table, also include:
 
   const finalResult = { ...aiResult, second_hand_links: mergedLinks };
 
-  // ── 5. Cache result ─────────────────────────────────────────────────────────
-  const savedSet = await base44.asServiceRole.entities.RecommendationSet.create({
-    query,
-    normalized_query: normalizedQuery,
-    category_key: (aiResult.normalized_category || query).toLowerCase().replace(/\s+/g, '_'),
-    country_context: userCountry,
-    summary_verdict: aiResult.summary_verdict,
-    confidence_level: aiResult.confidence_level || 'unknown',
-    result_json: JSON.stringify(finalResult),
-    is_ai_unreviewed: true,
-    last_used_at: new Date().toISOString(),
-  }).catch(() => null);
+  // ── 6. Save per-brand insights + full result cache (in parallel) ─────────────
+  const categoryKey = (aiResult.normalized_category || query).toLowerCase().replace(/\s+/g, '_');
+
+  const [savedSet] = await Promise.all([
+    base44.asServiceRole.entities.RecommendationSet.create({
+      query,
+      normalized_query: normalizedQuery,
+      category_key: categoryKey,
+      country_context: userCountry,
+      summary_verdict: aiResult.summary_verdict,
+      confidence_level: aiResult.confidence_level || 'unknown',
+      result_json: JSON.stringify(finalResult),
+      is_ai_unreviewed: true,
+      last_used_at: new Date().toISOString(),
+    }).catch(() => null),
+    saveBrandInsights(base44, categoryKey, aiResult),
+  ]);
 
   return Response.json({
     success: true,
