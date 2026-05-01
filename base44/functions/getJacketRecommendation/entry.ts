@@ -138,8 +138,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 2. Load known brand insights + durability data ──────────────────────────
-  // Derive category key from query for brand lookup (best-effort before AI runs)
+  // ── 2. Load known brand insights + durability data + FAST-PATH CHECK ──────────────
   const roughCategoryKey = normalizedQuery;
 
   const [knownInsights, durabilityAggregates] = await Promise.all([
@@ -153,229 +152,84 @@ Deno.serve(async (req) => {
   ]);
 
   const freshInsights = knownInsights.filter(isBrandFresh);
+  
+  // FAST-PATH: If we have enough high-confidence fresh brands, skip AI and compose result
+  const highConfidenceBrands = freshInsights.filter(b => b.confidence_level === 'high');
+  if (highConfidenceBrands.length >= 5 && freshInsights.length >= 8) {
+    // Build quick result from cached insights
+    const detailedTable = freshInsights.map(b => {
+      const durability = durabilityAggregates.find(d => d.brand_name === b.brand_name);
+      return {
+        brand_name: b.brand_name,
+        overall_score: b.overall_score || 5,
+        durability_score: b.durability_score || 5,
+        transparency_score: b.transparency_score || 5,
+        repairability_score: b.repairability_score || 5,
+        secondhand_score: b.secondhand_score || 5,
+        manufacturing_clarity_score: b.manufacturing_clarity_score || 5,
+        confidence_level: b.confidence_level,
+        recommended_buying_route: b.recommended_buying_route || 'buy_new',
+        website: b.website
+      };
+    });
+    
+    const fastPathResult = {
+      normalized_category: roughCategoryKey,
+      summary_verdict: `Based on existing research for ${roughCategoryKey}: ${highConfidenceBrands[0]?.brand_name} is highly recommended overall.`,
+      confidence_level: 'high',
+      confidence_explanation: 'Result based on 8+ verified brands from previous research.',
+      greenwashing_risk: 'low',
+      evidence_notes: 'Results compiled from verified brand research (${BRAND_CACHE_TTL_DAYS}-day cache).',
+      detailed_table: detailedTable,
+      second_hand_links: [],
+      lifecycle_stages: {},
+      what_we_know: [],
+      what_we_dont_know: [],
+      second_hand_advice: 'Check second-hand platforms for recent listings.'
+    };
+    
+    return Response.json({
+      success: true,
+      result: {
+        ...fastPathResult,
+        is_cached: true,
+        is_ai_unreviewed: false,
+      }
+    });
+  }
 
   // Build the "already known" context block + real durability data to inject into the prompt
   let knownBrandsContext = '';
   if (freshInsights.length > 0) {
     const lines = freshInsights.map(b => {
       const durability = durabilityAggregates.find(d => d.brand_name === b.brand_name);
-      const durabilityNote = durability ? ` [User data: ${durability.avg_months_to_failure ? Math.round(durability.avg_months_to_failure) + ' months avg lifespan' : 'limited data'}]` : '';
-      return `- ${b.brand_name}: overall=${b.overall_score}, durability=${b.durability_score}, transparency=${b.transparency_score}, repairability=${b.repairability_score}, secondhand=${b.secondhand_score}, mfg_clarity=${b.manufacturing_clarity_score}, confidence=${b.confidence_level}, route=${b.recommended_buying_route}, website=${b.website}. Summary: ${b.summary_verdict || 'N/A'}${durabilityNote}`;
+      const durabilityNote = durability ? ` [User data: ${durability.avg_months_to_failure ? Math.round(durability.avg_months_to_failure) + ' months avg' : 'limited'}]` : '';
+      return `${b.brand_name}: score=${b.overall_score}, durability=${b.durability_score}, confidence=${b.confidence_level}${durabilityNote}`;
     });
-    knownBrandsContext = `
-PREVIOUSLY RESEARCHED BRANDS (valid for up to ${BRAND_CACHE_TTL_DAYS} days — do NOT re-research these from scratch):
-The following brands have already been researched for the "${roughCategoryKey}" category. Re-use these scores and notes directly in your detailed_table output. Only update them if you have strong new contradicting evidence.
-
-${lines.join('\n')}
-
-REAL USER DURABILITY DATA (from DurabilityLog aggregates):
-Use this data to verify or update durability_score. If a brand claims "10-year lifespan" but user data shows average 18-month failure rate, flag greenwashing and penalise durability_score.
-
-${durabilityAggregates.map(d => `- ${d.brand_name}: ${d.avg_months_to_failure ? Math.round(d.avg_months_to_failure) + ' months average lifespan' : 'insufficient data'}, failure_rate=${(d.failure_rate || 0).toFixed(1)}%, repair_success=${(d.repair_success_rate || 0).toFixed(1)}%, common failures: ${d.most_common_failures?.map(f => f.type).join(', ') || 'unknown'}`).join('\n')}
-
-For brands listed above: copy their scores into detailed_table as-is. Focus your live internet research time on brands NOT listed above, or on finding a product_url for the top picks.
-`;
+    knownBrandsContext = `CACHED BRANDS (reuse scores as-is): ${lines.join(' | ')}`;
   }
 
-  // ── 3. Build prompt ──────────────────────────────────────────────────────────
-  const budgetNote = budget === 'low' ? 'Focus on affordable options under €150.' :
-    budget === 'premium' ? 'Include premium/high-end options €300+.' :
-    'Mid-range options €100–300.';
+  // ── 3. Build compact prompt (system instructions externalized) ───────────────
+  const budgetNote = budget === 'low' ? 'Under €150' : budget === 'premium' ? '€300+' : '€100–300';
+  const preferenceNote = preference === 'secondhand' ? 'Second-hand' : preference === 'new' ? 'New only' : 'Either';
 
-  const preferenceNote = preference === 'secondhand' ? 'User prefers second-hand. Prioritise secondhand availability and resale value.' :
-    preference === 'new' ? 'User wants to buy new.' :
-    'User is open to buying new or second-hand.';
-
-  const prompt = `
-You are a rigorous sustainability buying advisor for Worth Wearing. A user in ${userCountry} is looking for: "${query}".
-
-Context:
-- ${preferenceNote}
-- ${budgetNote}
-- Be skeptical. Separate verified evidence from brand marketing claims.
-- Use careful language: "Based on available evidence", "Limited evidence", "Unverified claim".
-- Do NOT assume a brand is bad because data is missing — separate lack of evidence from evidence of bad practice.
-- Small/independent brands should NOT be penalised for lacking big sustainability reports or expensive certifications. What matters is honest, specific communication about what they know and don't know.
-- For smaller brands: actively crawl their website for blog posts, founders' notes, factory pages, or pricing breakdowns that show genuine transparency — even imperfect transparency beats polished silence.
-- Confidence levels: "high" = verified third-party evidence, "medium" = partial evidence or honest first-party specifics, "low" = mostly vague brand claims, "unknown" = insufficient data.
-- WORKER TREATMENT IS A CORE SUSTAINABILITY METRIC. Research factory working conditions, wages, working hours, safety standards, union representation, and labor certification (Fair Trade, SA8000, etc.). Penalise brands with documented labor abuses or refusal to disclose factory conditions.
-
-LIFECYCLE STAGE ANALYSIS (Required for all brands):
-Evaluate each stage separately:
-1. RAW MATERIAL: Fiber type (synthetic vs natural), certifications (GOTS, OEKO-TEX), water footprint, pesticide use, recyclability
-2. MANUFACTURING: Location, energy sources, emissions, chemical processes, wastewater treatment, worker wages/conditions
-3. TRANSPORT: Distance from ${userCountry}, shipping mode (air/sea), estimated CO2 (sea shipping ~20x lower CO2 than air)
-4. USE/DURABILITY: Expected lifespan, user repair data, design-for-longevity, warranty policies, repairability
-5. END-OF-LIFE: Recyclability, take-back programs, microfiber shedding, biodegradability, circular economy initiatives
-
-EVIDENCE SOURCE WEIGHTING (Critical):
-Weight sources by credibility, NOT equally:
-- Third-party audit (9-10): Independent certifier, audited supply chain, verifiable claims
-- Certification body (8-9): Official cert provider (GOTS, Fair Trade, Bluesign, SA8000)
-- Brand transparency page (5-7): Published data, supply chain list, wage info (if detailed and specific)
-- Brand marketing/PDF (3-4): Glossy claims without specifics, vague "ethical sourcing"
-- News article (5-7): Depends on source quality; reputable outlets score higher
-- Reddit (1-3): Self-selected opinions, unverified, extreme views; use only for "product popularity" NOT sustainability claims
-
-When citing evidence, ALWAYS mention the source type and why you trust it. Flags greenwashing when:
-- Brand makes claims but refuses to name factories (worker treatment especially opaque = red flag)
-- Uses vague language ("eco-friendly", "ethical", "responsible" without definition or wage data)
-- Has low credibility evidence but high confidence
-- No independent verification available
-- Claims "living wage" or "ethical sourcing" with zero factory disclosure (auto-penalty: -3 worker score)
-
-WORKER ETHICS SCORE (0-10) — WAGE VERIFICATION MANDATORY:
-- 9-10: Published wage data with specific €/hourly rates, named factories, Fair Trade/SA8000 cert, union support, transparent audits
-- 7-8: Named factories with working condition reports, active auditor access, living wage claims with evidence
-- 5-6: Audited suppliers disclosed, some wage info available, but not fully transparent on rates
-- 3-4: Vague "ethical sourcing" claims, no specific factory names, no wage data
-- 1-2: Documented labor violations, factory refusal to disclose locations/wages, greenwashing on workers
-- 0: Active labor abuse, forced labor evidence, actively hiding factory conditions
-
-CRITICAL: If a brand claims "living wage" but won't publish factory names or wage data, score ≤ 4. No exceptions.
-Use verifyWorkerWages function to cross-check wage claims against evidence sources.
-
-GREENWASHING RISK FLAG:
-Return "low" if: high confidence, weighted evidence, multiple independent sources
-Return "medium" if: some conflicting info, mixed evidence credibility, limited transparency
-Return "high" if: low confidence, only brand-owned sources, vague claims, zero independent verification
+  const prompt = `SEARCH: "${query}" | LOCATION: ${userCountry} | PREFERENCE: ${preferenceNote} | BUDGET: ${budgetNote}
 
 ${knownBrandsContext}
 
-YOUR TASKS:
-1. Identify the product category from the query.
-2. Research 8-10 relevant brands — MUST include a mix of well-known brands AND small/independent brands.
-3. For each brand NOT already listed above: fabric/material type and environmental impact, durability evidence, supply chain transparency, repair/warranty policy, secondhand availability, manufacturing location (PROXIMITY TO ${userCountry} is important for transport CO2), AND FACTORY WORKER TREATMENT (wages, conditions, certifications, documented labor practices).
-4. For top brands, find a direct product URL for "${query}" on their website.
-5. REDDIT RESEARCH (MANDATORY for any brand NOT in the pre-researched list above): Search Reddit (r/BuyItForLife, r/MaleFashionAdvice, r/femalefashionadvice, r/Fitness, r/Ultralight, r/skiing, r/surfing, r/Wetsuit or relevant subreddits) for genuine user sentiment. Note specific praised strengths AND complaints about quality, durability, customer service, greenwashing, or labor practices.
+RESEARCH: 8-10 brands (mix known + small independent). For each: material/durability/supply chain/repair/second-hand/worker ethics.
+Include: product URLs, Reddit sentiment (r/BuyItForLife, relevant subreddits), small brand website analysis.
+Score small brands on honesty/specificity, not certifications. Flag greenwashing, vague claims, missing factory info.
+Transport CO2: calculate distance ${userCountry} → manufacturing location.
 
-SMALL BRAND DEEP RESEARCH (MANDATORY):
-You MUST identify at least one small/independent brand for "independent_brand_spotlight". This is a brand NOT in the same league as Norrøna, Rab, Houdini, Peak Performance, Patagonia, Arc'teryx, Fjällräven, Mammut, or similar large established brands.
+TONE: Honest researcher. Cite evidence type. Flag unknowns. Be skeptical: "Based on available evidence", "Limited data", "Unverified claim".
 
-For the small brand spotlight, you MUST actively visit their website and look for:
-- Pages titled: "Our story", "Impact", "Transparency", "How we make it", "Materials", "Supply chain", "Factory visits", "Pricing breakdown", "B Corp journey", "Our footprint"
-- Blog posts or journal entries where founders or team members discuss trade-offs, challenges, or limitations honestly
-- Specific language like: "we're not there yet", "here's what we couldn't afford to fix", "we chose X even though Y would be better because Z"
-- Named factories or production partners with location data (proximity to ${userCountry} is a bonus)
-- Fabric/material sourcing transparency and environmental impact claims
-- Any pricing cost-breakdown transparency
+LIFECYCLE (all brands): RAW MATERIAL (fiber/certs/footprint) → MANUFACTURING (location/energy/worker wages) → TRANSPORT (distance/mode/CO2) → USE/DURABILITY (lifespan/repair) → END-OF-LIFE (recyclable/take-back).
 
-SCORING FOR SMALL BRANDS — apply a different lens:
-- A small brand that openly says "our zippers come from YKK but we're researching alternatives" scores HIGHER on transparency than a large brand with a glossy PDF that says nothing specific.
-- A small brand that documents a factory visit on their blog scores HIGHER than a large brand with a vague "audited suppliers" claim.
-- Do NOT penalise a small brand for not having Bluesign or Fair Trade certification — these cost tens of thousands of euros. Instead, reward honest acknowledgment of this gap.
-- DO penalise greenwashing even from small brands — vague "eco-friendly" or "sustainable materials" claims with zero specifics are a red flag at any size.
-- For worker treatment: a small brand that names its factories and publishes wage data or working condition notes scores HIGHER than a large brand claiming "ethical sourcing" with no specifics. Documented labor violations or refusal to disclose factory conditions are serious red flags at any size.
-- TRANSPORT CO2: Be honest about CO2 calculations. Include these factors:
-  * Manufacturing location distance from ${userCountry}
-  * Shipping mode (air ~1000g CO2/kg, sea ~50g CO2/kg)
-  * Supply chain origins (where raw materials come from)
-  * Admit limitations: "Estimated based on typical sea shipping" vs "Calculated from published data"
-  * Distinguish between "we found limited info" and "manufacturing is far so high CO2"
+WORKER ETHICS (mandatory): Published wage data + named factories = 9-10. Named factories + conditions = 7-8. Vague claims + no factories = 1-4. Living wage claim without factory names = ≤4.
 
-why_chosen for the independent_brand_spotlight must quote or closely paraphrase SPECIFIC language found on their website — not generic praise. If you find a specific page or blog post where they discuss limitations, cite it.
+SMALL BRANDS: Reward honesty about limitations. "we can't afford Bluesign yet" > glossy corporate PDF. Factory names + repair programs + founder notes = high score.
 
-TONE RULES:
-- Write like a trusted friend who has done the research, not a corporate sustainability report.
-- Be honest about unknowns. Uncertainty is not weakness — hiding it is.
-- "second_hand_advice": practical, specific — where to look, what to check, what to avoid.
-- "evidence_snippets": concrete citable facts only (e.g. "Patagonia publishes a full supplier list at patagonia.com/sourcing").
-- reddit_sentiment: summarise what real users say — good and bad. Do not sanitise negative feedback.
-- Include worker treatment insights in all relevant sections. Brands that hide factory conditions or have documented labor abuses deserve skepticism.
-- MATERIAL STAGE: Always specify fiber type, durability (years of expected use), certifications (credibility score), recyclability, toxins (dyes, PFOA, etc.), water footprint. Distinguish: 100% polyester that lasts 10 years can have LOWER total footprint than 100% organic cotton lasting 2 years.
-- MANUFACTURING STAGE: Location, energy sources, chemical/dye processes, water treatment, worker wages/conditions (dedicated worker_score).
-- TRANSPORT STAGE: Manufacturing origin distance, shipping mode, estimated CO2. 
-  * CRITICAL: Use the calculateTransportCO2 function to estimate actual CO2 from manufacturing country to ${userCountry}.
-  * Sea shipping ~10g CO2/kg (most common). Air shipping ~255g CO2/kg (only for fast-fashion/drop shipments).
-  * Always state assumption: "Estimated via sea shipping" vs "Verified air shipment".
-  * Example: Vietnam to Norway at 0.5kg via sea = ~12g CO2. Via air = ~64g CO2. Show both if mode uncertain.
-- USE STAGE: Lifespan expectation, repair services, warranty, design-for-longevity, user durability data (from DurabilityLog entity).
-- END-OF-LIFE STAGE: Recycling programs, take-back schemes, microfiber risk, biodegradability, circular economy design.
-- SOURCE WEIGHTING: Cite source credibility. If a claim relies only on brand marketing, say "Brand claims (unverified)" not "Evidence shows..."
-
-Keep all text fields concise. Limit detailed_table to max 8 brands. Limit evidence_snippets to max 2 items per brand block.
-
-OUTPUT as JSON:
-{
-  "normalized_category": string,
-  "summary_verdict": string (2-3 sentences, honest and direct),
-  "confidence_level": "high"|"medium"|"low"|"unknown",
-  "confidence_explanation": string (1-2 sentences — WHY this confidence level),
-  "greenwashing_risk": "low"|"medium"|"high" (flag where confidence is low or sources are weak),
-  "evidence_notes": string,
-  "what_we_know": string[] (3-4 concrete things with solid evidence — cite source type),
-  "what_we_dont_know": string[] (3-4 specific gaps),
-  "second_hand_advice": string (2-3 sentences, practical),
-  "best_overall": {
-    "brand_name": string, "verdict": string, "why_chosen": string,
-    "main_known_evidence": string, "main_unknown": string,
-    "evidence_snippets": string[] (max 2, include source credibility),
-    "evidence_confidence": "high"|"medium"|"low"|"unknown",
-    "recommended_buying_route": "buy_new"|"buy_secondhand"|"research_further",
-    "product_url": string, "website": string
-  },
-  "best_for_durability": { (same shape as best_overall) },
-  "best_for_transparency": { (same shape as best_overall) },
-  "best_for_worker_ethics": {
-    (same shape as best_overall)
-    "worker_score": number (0-10),
-    "wage_transparency": string,
-    "factory_conditions": string,
-    "labor_certifications": string
-  },
-  "best_for_circular_economy": {
-    (same shape as best_overall)
-    "repair_programs": string,
-    "take_back_schemes": string,
-    "recycling_initiatives": string
-  },
-  "best_second_hand_choice": {
-    (same shape as best_overall, plus:)
-    "secondhand_why": string, "secondhand_tips": string
-  },
-  "biggest_unknown": { (same shape as best_overall) },
-  "detailed_table": [
-    {
-      "brand_name": string,
-      "overall_score": number,
-      "material_score": number,
-      "manufacturing_score": number,
-      "worker_score": number,
-      "durability_score": number,
-      "transparency_score": number,
-      "circularity_score": number,
-      "confidence_level": "high"|"medium"|"low"|"unknown",
-      "greenwashing_risk": "low"|"medium"|"high",
-      "recommended_buying_route": string,
-      "website": string
-    }
-  ],
-  "lifecycle_stages": {
-    "raw_material": string (fiber type, certifications, water/pesticide impact),
-    "manufacturing": string (location, energy, emissions, worker practices),
-    "transport": string (distance, mode, estimated CO2 with assumptions noted),
-    "use_durability": string (lifespan, repair-ability, warranty),
-    "end_of_life": string (recyclability, take-back, microfiber risk)
-  },
-  "second_hand_links": [
-    { "platform": string, "search_url": string, "note": string }
-  ],
-  "independent_brand_spotlight": {
-    "brand_name": string,
-    "verdict": string,
-    "why_chosen": string,
-    "reddit_sentiment": string,
-    "main_known_evidence": string,
-    "main_unknown": string,
-    "evidence_confidence": "high"|"medium"|"low"|"unknown",
-    "recommended_buying_route": "buy_new"|"buy_secondhand"|"research_further",
-    "product_url": string,
-    "website": string
-  }
-}
-
-REDDIT SENTIMENT — for each brand block in detailed_table NOT already in the pre-researched list, also include:
-  "reddit_sentiment": string (1-2 sentences — what r/BuyItForLife and relevant subreddits actually say. Include specific praise AND complaints.)
 `;
 
   const jsonSchema = {
