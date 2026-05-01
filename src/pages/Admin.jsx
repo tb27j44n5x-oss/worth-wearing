@@ -5,6 +5,8 @@ import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminReports from "@/components/admin/AdminReports";
 import AdminResearch from "@/components/admin/AdminResearch";
 import AdminReviewQueue from "@/components/admin/AdminReviewQueue";
+import AdminDashboardAnalytics from "@/components/admin/AdminDashboardAnalytics";
+import AdminContentFlagNotifications from "@/components/admin/AdminContentFlagNotifications";
 import { ClipboardList, FileText, Search, Inbox } from "lucide-react";
 
 const TABS = [
@@ -49,6 +51,17 @@ export default function Admin() {
         <div className="mb-8">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Administration</p>
           <h1 className="font-syne text-4xl font-bold text-foreground">Admin Dashboard</h1>
+        </div>
+
+        {/* Analytics dashboard */}
+        <div className="mb-8">
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Quick Stats</p>
+          <AdminDashboardAnalytics />
+        </div>
+
+        {/* Alerts */}
+        <div className="mb-8 space-y-3">
+          <AdminContentFlagNotifications />
         </div>
 
         {/* Tabs */}

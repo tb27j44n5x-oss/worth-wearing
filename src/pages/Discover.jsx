@@ -29,7 +29,7 @@ export default function Discover() {
       .filter(r => r.independent_brand_spotlight)
       .map(r => ({
         ...r.independent_brand_spotlight,
-        category: r.category,
+        category: r.category || r.independent_brand_spotlight.category || "uncategorized",
         report_id: r.id,
         brand_id: r.brand_id
       }))

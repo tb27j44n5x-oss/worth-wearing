@@ -31,6 +31,7 @@ export default function RecommendationResult() {
   const [error, setError] = useState(null);
   const [circularFilter, setCircularFilter] = useState(false);
   const [crawlData, setCrawlData] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!query) return;
@@ -119,6 +120,20 @@ export default function RecommendationResult() {
               <DataFreshnessBadge 
                 lastResearched={result.last_researched_at}
                 evidenceFreshness={result.evidence_freshness}
+                onRefresh={async () => {
+                  setRefreshing(true);
+                  try {
+                    await base44.functions.invoke("researchBrand", {
+                      brand_name: result.best_overall?.brand_name,
+                      category: result.normalized_category
+                    });
+                    setResult(prev => ({ ...prev, last_researched_at: new Date().toISOString() }));
+                  } catch (err) {
+                    console.error("Refresh failed:", err);
+                  } finally {
+                    setRefreshing(false);
+                  }
+                }}
               />
             )}
 
@@ -218,7 +233,7 @@ export default function RecommendationResult() {
             {result.best_overall?.brand_name && (
               <DurabilityLogger 
                 brandName={result.best_overall.brand_name}
-                brandId={result.best_overall.brand_name.toLowerCase().replace(/\s+/g, '_')}
+                brandId={result.best_overall.brand_id || result.best_overall.brand_name.toLowerCase().replace(/\s+/g, '_')}
                 categoryKey={result.normalized_category}
               />
             )}
