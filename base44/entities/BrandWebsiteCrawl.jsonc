@@ -1,0 +1,196 @@
+{
+  "name": "BrandWebsiteCrawl",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "brand_website": {
+      "type": "string",
+      "description": "URL of the brand's main website"
+    },
+    "crawled_pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content_summary": {
+            "type": "string",
+            "description": "Extracted text content (first 1000 chars)"
+          },
+          "page_type": {
+            "type": "string",
+            "enum": [
+              "about",
+              "impact",
+              "transparency",
+              "blog",
+              "factory",
+              "sustainability",
+              "repair",
+              "circular",
+              "supply_chain",
+              "press",
+              "other"
+            ],
+            "description": "Categorization of page purpose"
+          },
+          "crawled_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "List of successfully crawled pages with extracted content"
+    },
+    "key_findings": {
+      "type": "object",
+      "properties": {
+        "factory_information": {
+          "type": "object",
+          "description": "Extracted factory details",
+          "properties": {
+            "named_factories": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "locations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "factory_visit_evidence": {
+              "type": "boolean"
+            }
+          }
+        },
+        "founder_notes": {
+          "type": "string",
+          "description": "Direct quotes or summary from founder about sustainability approach"
+        },
+        "repair_programs": {
+          "type": "object",
+          "properties": {
+            "exists": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          }
+        },
+        "circular_initiatives": {
+          "type": "string",
+          "description": "Take-back schemes, recycling programs, design-for-longevity statements"
+        },
+        "transparency_statements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Quotes about what brand does and doesn't know about their supply chain"
+        },
+        "material_sourcing": {
+          "type": "string",
+          "description": "Information about fabric/material sourcing and certifications"
+        },
+        "worker_practices": {
+          "type": "string",
+          "description": "Wage information, working condition details, certifications"
+        },
+        "honest_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Instances where brand admits gaps or limitations in their sustainability"
+        }
+      },
+      "description": "Key extracted findings from website crawl"
+    },
+    "small_brand_transparency_score": {
+      "type": "number",
+      "description": "0-10 score for transparency indicators found on website. Rewards honesty about limitations.",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "transparency_breakdown": {
+      "type": "object",
+      "properties": {
+        "factory_transparency": {
+          "type": "number",
+          "description": "Do they name/disclose factories?"
+        },
+        "founder_honesty": {
+          "type": "number",
+          "description": "Do founder notes show honest discussion of limitations?"
+        },
+        "supply_chain_detail": {
+          "type": "number",
+          "description": "Level of detail on sourcing and supply chain"
+        },
+        "repair_clarity": {
+          "type": "number",
+          "description": "Clear information on repair/warranty programs?"
+        },
+        "sustainability_specificity": {
+          "type": "number",
+          "description": "Are claims specific or vague?"
+        }
+      }
+    },
+    "red_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Potential greenwashing indicators found during crawl"
+    },
+    "crawl_status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial_success",
+        "failed",
+        "blocked"
+      ],
+      "description": "Overall success of crawl operation"
+    },
+    "pages_crawled": {
+      "type": "number",
+      "description": "Number of pages successfully crawled (max 15)"
+    },
+    "crawl_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_crawl_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Auto-refresh every 6 months"
+    },
+    "crawl_notes": {
+      "type": "string",
+      "description": "Any issues or limitations encountered during crawl"
+    }
+  },
+  "required": [
+    "brand_id",
+    "brand_website"
+  ]
+}

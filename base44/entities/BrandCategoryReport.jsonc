@@ -45,6 +45,13 @@
       ],
       "description": "Flags where AI confidence is low or sources are weak"
     },
+    "greenwashing_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Detected greenwashing indicators: factory_names_withheld, vague_language, contradiction_detected, staged_imagery, only_brand_sources, etc."
+    },
     "material_score": {
       "type": "number",
       "description": "Fiber type, durability, recyclability, toxicity, water footprint (0-10)"
@@ -63,6 +70,31 @@
       "type": "number",
       "description": "Factory conditions, wages, safety, union representation, certifications (0-10)"
     },
+    "worker_score_breakdown": {
+      "type": "object",
+      "properties": {
+        "wages": {
+          "type": "number"
+        },
+        "conditions": {
+          "type": "number"
+        },
+        "certifications": {
+          "type": "number"
+        },
+        "transparency": {
+          "type": "number"
+        },
+        "weighted_average": {
+          "type": "number"
+        },
+        "calculation_method": {
+          "type": "string",
+          "description": "How was the score calculated? e.g., 'weighted: 40% wages, 30% conditions, 20% certs, 10% transparency'"
+        }
+      },
+      "description": "Transparent breakdown of worker score components"
+    },
     "repair_score": {
       "type": "number"
     },
@@ -72,6 +104,52 @@
     "circularity_score": {
       "type": "number",
       "description": "Repair programs, take-back schemes, recycling initiatives, design-for-disassembly (0-10)"
+    },
+    "circularity_breakdown": {
+      "type": "object",
+      "properties": {
+        "repair_programs": {
+          "type": "object",
+          "properties": {
+            "exists": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "string"
+            },
+            "uptake_rate": {
+              "type": "string",
+              "description": "Percentage of customers using program, or 'unknown'"
+            }
+          }
+        },
+        "take_back_schemes": {
+          "type": "object",
+          "properties": {
+            "exists": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "uptake_rate": {
+              "type": "string"
+            }
+          }
+        },
+        "recycling_initiatives": {
+          "type": "object",
+          "properties": {
+            "exists": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Structured breakdown of circular economy programs with adoption evidence"
     },
     "consumption_model_score": {
       "type": "number"
@@ -97,6 +175,26 @@
         "type": "string"
       }
     },
+    "data_gaps_materiality": {
+      "type": "object",
+      "properties": {
+        "critical": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Missing data that would significantly impact the score (e.g., factory wages)"
+        },
+        "minor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Missing data that's nice-to-have but not decision-critical"
+        }
+      },
+      "description": "Categorizes unknowns by impact level"
+    },
     "recommendation": {
       "type": "string"
     },
@@ -110,7 +208,7 @@
     },
     "transport_argument": {
       "type": "string",
-      "description": "CO2 from manufacturing location, distribution distance, shipping mode"
+      "description": "CO2 from manufacturing location, distribution distance, shipping mode, with assumptions noted"
     },
     "worker_argument": {
       "type": "string",
@@ -146,28 +244,121 @@
     "quality_durability_review": {
       "type": "string"
     },
+    "evidence_sources_map": {
+      "type": "object",
+      "description": "Maps each score to the EvidenceSource IDs used to derive it. e.g., { 'worker_score': ['src_123', 'src_456'], 'material_score': ['src_789'] }",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "claims_needing_manual_review": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "The specific claim that needs verification"
+          },
+          "source_id": {
+            "type": "string",
+            "description": "EvidenceSource ID where this claim came from"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "unverified_wage_claim",
+              "unverified_environmental_claim",
+              "contradicted_by_other_source",
+              "vague_language",
+              "outdated_evidence",
+              "single_source_only"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "description": "How important is this claim to the overall recommendation?"
+          }
+        }
+      },
+      "description": "Claims identified by AI that need admin verification before publishing"
+    },
     "sources": {
       "type": "array",
       "items": {
         "type": "object"
       }
     },
+    "evidence_freshness": {
+      "type": "object",
+      "properties": {
+        "oldest_source_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "confidence_adjustment": {
+          "type": "number",
+          "description": "How many confidence levels to downgrade due to evidence age (e.g., -1 if older than 18 months)"
+        },
+        "requires_refresh": {
+          "type": "boolean",
+          "description": "Flag if evidence is too old to trust"
+        }
+      },
+      "description": "Tracks evidence age and automatic confidence adjustments"
+    },
     "version": {
       "type": "number",
-      "default": 1
+      "default": 2
     },
     "status": {
       "type": "string",
       "enum": [
         "draft",
-        "pending_review",
+        "claims_pending_review",
+        "pending_admin_approval",
         "published",
-        "archived"
+        "archived",
+        "needs_refresh"
       ],
-      "default": "draft"
+      "default": "draft",
+      "description": "New status 'claims_pending_review' when claims_needing_manual_review has items"
     },
     "admin_notes": {
       "type": "string"
+    },
+    "admin_overrides": {
+      "type": "object",
+      "description": "Track which scores were manually overridden by admin and why",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "original_score": {
+            "type": "number"
+          },
+          "override_score": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "overridden_by_email": {
+            "type": "string"
+          },
+          "overridden_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     },
     "last_researched_at": {
       "type": "string",

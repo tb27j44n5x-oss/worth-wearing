@@ -1,0 +1,143 @@
+{
+  "name": "DurabilityAggregate",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "total_reports": {
+      "type": "number",
+      "description": "Total number of DurabilityLog entries aggregated"
+    },
+    "total_reports_by_event": {
+      "type": "object",
+      "properties": {
+        "repair": {
+          "type": "number"
+        },
+        "failure": {
+          "type": "number"
+        },
+        "still_wearing": {
+          "type": "number"
+        },
+        "longevity_milestone": {
+          "type": "number"
+        }
+      }
+    },
+    "failure_rate": {
+      "type": "number",
+      "description": "Percentage of reports indicating failure/unusable state (0-100)"
+    },
+    "avg_months_to_failure": {
+      "type": "number",
+      "description": "Average months before product failed (from failure reports only)"
+    },
+    "avg_months_to_repair": {
+      "type": "number",
+      "description": "Average months before first repair needed"
+    },
+    "repair_success_rate": {
+      "type": "number",
+      "description": "Percentage of repairs that were successful (product still usable)"
+    },
+    "avg_repair_cost": {
+      "type": "number",
+      "description": "Average repair cost in EUR (from reports that included cost)"
+    },
+    "brand_repair_service_usage": {
+      "type": "number",
+      "description": "Percentage of repairs done through brand's own repair service"
+    },
+    "most_common_failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "e.g., 'zipper', 'seam', 'fabric tear'"
+          },
+          "count": {
+            "type": "number"
+          },
+          "percentage": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Ranked list of most reported failure types"
+    },
+    "most_common_repairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          },
+          "success_rate": {
+            "type": "number"
+          },
+          "avg_cost": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "reliability_verdict": {
+      "type": "string",
+      "enum": [
+        "very_reliable",
+        "reliable",
+        "moderate_reliability",
+        "poor_reliability",
+        "insufficient_data"
+      ],
+      "description": "Overall verdict based on failure rate and user reports"
+    },
+    "longevity_distribution": {
+      "type": "object",
+      "description": "Distribution of how long users kept the product",
+      "properties": {
+        "under_6_months": {
+          "type": "number"
+        },
+        "6_12_months": {
+          "type": "number"
+        },
+        "1_2_years": {
+          "type": "number"
+        },
+        "2_5_years": {
+          "type": "number"
+        },
+        "over_5_years": {
+          "type": "number"
+        }
+      }
+    },
+    "last_aggregated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_aggregation_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "brand_id",
+    "category_key"
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "name": "ContentFlag",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "report_id": {
+      "type": "string",
+      "description": "ID of the BrandCategoryReport being flagged"
+    },
+    "flagged_by_email": {
+      "type": "string",
+      "description": "Email of user submitting the flag"
+    },
+    "flag_type": {
+      "type": "string",
+      "enum": [
+        "greenwashing",
+        "outdated_info",
+        "missing_context",
+        "contradicts_evidence",
+        "factually_wrong",
+        "biased_assessment",
+        "other"
+      ],
+      "description": "Category of the reported issue"
+    },
+    "description": {
+      "type": "string",
+      "description": "User's detailed explanation of the issue"
+    },
+    "evidence_url": {
+      "type": "string",
+      "description": "Link to evidence supporting the flag (optional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "under_review",
+        "resolved",
+        "dismissed"
+      ],
+      "default": "pending",
+      "description": "Admin workflow status"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "description": "Admin assessment of flag severity"
+    },
+    "admin_response": {
+      "type": "string",
+      "description": "Admin's explanation of resolution or dismissal"
+    },
+    "report_updated": {
+      "type": "boolean",
+      "default": false,
+      "description": "Was the flagged report updated as a result?"
+    },
+    "reviewed_by_email": {
+      "type": "string",
+      "description": "Admin email who reviewed this flag"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "brand_id",
+    "report_id",
+    "flagged_by_email",
+    "flag_type",
+    "description"
+  ]
+}

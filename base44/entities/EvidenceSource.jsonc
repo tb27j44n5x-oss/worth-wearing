@@ -30,12 +30,39 @@
         "forum",
         "reddit",
         "academic",
+        "linkedin",
+        "website_crawl",
         "unknown"
       ]
     },
     "claim_type": {
       "type": "string",
       "description": "What aspect does this source address? e.g. 'worker_wages', 'fabric_recyclability', 'repair_service'"
+    },
+    "claim_direction": {
+      "type": "string",
+      "enum": [
+        "supports",
+        "contradicts",
+        "neutral"
+      ],
+      "default": "supports",
+      "description": "Does this evidence support or contradict a sustainability claim?"
+    },
+    "claim_category": {
+      "type": "string",
+      "enum": [
+        "worker_ethics",
+        "material",
+        "manufacturing",
+        "transport",
+        "durability",
+        "repair",
+        "circular",
+        "transparency",
+        "other"
+      ],
+      "description": "Which lifecycle stage or sustainability dimension does this evidence address?"
     },
     "source_owner": {
       "type": "string"
@@ -48,7 +75,7 @@
     },
     "credibility_score": {
       "type": "number",
-      "description": "1-10: Third-party audit=9-10, brand disclosure=5-7, Reddit=1-3"
+      "description": "1-10: Third-party audit=9-10, certification=8-9, brand disclosure=5-7, news=5-7, LinkedIn=4-6, Reddit=1-3, unknown=2"
     },
     "is_brand_owned": {
       "type": "boolean",
@@ -61,6 +88,27 @@
     "published_date": {
       "type": "string",
       "format": "date"
+    },
+    "manual_review_flag": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin flagged this source as suspicious or needing verification"
+    },
+    "manual_review_note": {
+      "type": "string",
+      "description": "Why was this flagged for manual review?"
+    },
+    "contradicting_source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Links to EvidenceSource records that contradict this claim"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin manually verified this source"
     }
   },
   "required": [
