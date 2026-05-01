@@ -87,10 +87,14 @@ export default function RecommendationResult() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Loader2 className="animate-spin text-primary mb-4" size={36} />
-            <p className="font-syne text-xl font-semibold text-foreground mb-2">Researching brands…</p>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Looking for solid evidence — not just marketing claims. This takes a moment.
+            <p className="font-syne text-xl font-semibold text-foreground mb-2">Researching 8-10 brands…</p>
+            <p className="text-sm text-muted-foreground max-w-sm mb-4">
+              Analyzing durability, worker ethics, transparency, and supply chains. This typically takes <strong>15-40 seconds</strong>.
             </p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+              <span>Checking evidence sources & Reddit sentiment</span>
+            </div>
           </div>
         )}
 

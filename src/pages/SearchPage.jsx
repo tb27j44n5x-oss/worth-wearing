@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight, Shield, Wrench, ShoppingBag, Eye, MapPin, RefreshCw, DollarSign, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
@@ -28,6 +28,7 @@ export default function SearchPage() {
   const [preference, setPreference] = useState("either");
   const [budget, setBudget] = useState("mid");
   const navigate = useNavigate();
+  const debounceTimer = useRef(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -41,6 +42,21 @@ export default function SearchPage() {
     if (!term) return;
     const params = new URLSearchParams({ q: term, country, preference, budget });
     navigate(`/recommendation?${params.toString()}`);
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    
+    // Debounce: clear previous timer and set new one
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    
+    // Auto-search only if text is long enough (prevent spam on single characters)
+    if (value.length >= 3) {
+      debounceTimer.current = setTimeout(() => {
+        handleSearch(value);
+      }, 300);
+    }
   };
 
   return (
@@ -78,7 +94,7 @@ export default function SearchPage() {
               type="text"
               placeholder="Try: waterproof shell jacket, natural rubber wetsuit, warm winter coat"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="flex-1 px-3 py-4 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm min-w-0"
             />
