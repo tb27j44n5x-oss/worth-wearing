@@ -112,7 +112,6 @@ const AuthenticatedApp = () => {
   return (
     <>
       <AnimatedRoutes />
-      <BottomNav />
     </>
   );
 };
