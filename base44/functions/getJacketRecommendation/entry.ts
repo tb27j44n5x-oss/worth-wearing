@@ -58,7 +58,7 @@ async function saveBrandInsights(base44, categoryKey, aiResult) {
     while (retries < maxRetries) {
       try {
         // Check for existing insight to update
-        const existing = await base44.asServiceRole.entities.BrandCategoryInsight.filter({
+        const existing = await base44.entities.BrandCategoryInsight.filter({
           brand_name: row.brand_name,
           category_key: categoryKey,
         }).catch(() => []);
@@ -97,9 +97,9 @@ async function saveBrandInsights(base44, categoryKey, aiResult) {
         };
 
         if (existing.length > 0) {
-          await base44.asServiceRole.entities.BrandCategoryInsight.update(existing[0].id, payload);
+          await base44.entities.BrandCategoryInsight.update(existing[0].id, payload);
         } else {
-          await base44.asServiceRole.entities.BrandCategoryInsight.create({ 
+          await base44.entities.BrandCategoryInsight.create({ 
             ...payload, 
             brand_id: row.brand_name.toLowerCase().replace(/\s+/g, '_') 
           });
@@ -175,11 +175,11 @@ Deno.serve(async (req) => {
   const roughCategoryKey = normalizedQuery;
 
   const [knownInsights, durabilityAggregates] = await Promise.all([
-    base44.asServiceRole.entities.BrandCategoryInsight.filter({
+    base44.entities.BrandCategoryInsight.filter({
       category_key: roughCategoryKey,
       is_current: true,
     }).catch(() => []),
-    base44.asServiceRole.entities.DurabilityAggregate.filter({
+    base44.entities.DurabilityAggregate.filter({
       category_key: roughCategoryKey,
     }).catch(() => [])
   ]);
@@ -363,25 +363,34 @@ SMALL BRANDS: Reward honesty about limitations. "we can't afford Bluesign yet" >
 
   // ── 4. Run AI research ───────────────────────────────────────────────────────
   let aiResult;
-  try {
-    aiResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt,
-      add_context_from_internet: true,
-      model: 'gemini_3_1_pro',
-      response_json_schema: jsonSchema
-    });
-  } catch (firstErr) {
+  
+  const tryResearch = async (model) => {
     try {
-      aiResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt,
         add_context_from_internet: true,
-        model: 'gemini_3_flash',
+        model,
         response_json_schema: jsonSchema
       });
-    } catch (secondErr) {
+      // Validate that result is not null/empty
+      if (!result || typeof result !== 'object') {
+        throw new Error('LLM returned empty or invalid result');
+      }
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  try {
+    aiResult = await tryResearch('gemini_3_1_pro');
+  } catch (err1) {
+    try {
+      aiResult = await tryResearch('gemini_3_flash');
+    } catch (err2) {
       return Response.json({
         error: 'Research failed after retry. Please try again.',
-        detail: secondErr.message
+        detail: err2.message
       }, { status: 500 });
     }
   }
@@ -413,7 +422,7 @@ SMALL BRANDS: Reward honesty about limitations. "we can't afford Bluesign yet" >
   const categoryKey = (aiResult.normalized_category || query).toLowerCase().replace(/\s+/g, '_');
 
   const [savedSet] = await Promise.all([
-    base44.asServiceRole.entities.RecommendationSet.create({
+    base44.entities.RecommendationSet.create({
       query,
       normalized_query: normalizedQuery,
       category_key: categoryKey,
