@@ -1,7 +1,18 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import NavBar from "@/components/NavBar";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const TYPES = [
   { value: "new_brand", label: "Suggest a new brand" },
@@ -16,6 +27,18 @@ export default function Suggest() {
   const [form, setForm] = useState({ correction_type: "new_brand", brand_name: "", note: "", submitted_source_url: "" });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    // Mark the user's data as deleted via a correction record, then log out
+    await base44.entities.UserCorrection.create({
+      correction_type: "report_correction",
+      note: `[ACCOUNT DELETION REQUEST] User ${user?.email} requested account deletion.`,
+      status: "pending",
+    }).catch(() => {});
+    base44.auth.logout();
+  };
   const [user, setUser] = useState(undefined); // undefined = still checking
 
   useEffect(() => {
@@ -65,7 +88,7 @@ export default function Suggest() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-safe">
       <NavBar />
       <div className="max-w-2xl mx-auto px-6 py-16">
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Community</p>
@@ -145,6 +168,46 @@ export default function Suggest() {
             </button>
           </form>
         )}
+
+        {/* Account deletion */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Danger zone</p>
+          <div className="bg-card border border-destructive/30 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-medium text-foreground">Delete my account</p>
+              <p className="text-xs text-muted-foreground mt-0.5">This will log you out and send a deletion request to our team.</p>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  disabled={deleting}
+                  className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-medium hover:bg-destructive/90 disabled:opacity-50 transition-colors select-none"
+                >
+                  <Trash2 size={14} />
+                  {deleting ? "Processing..." : "Delete account"}
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will submit an account deletion request to our team and log you out immediately. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Yes, delete my account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+        <div className="mobile-bottom-spacer md:hidden" />
       </div>
     </div>
   );

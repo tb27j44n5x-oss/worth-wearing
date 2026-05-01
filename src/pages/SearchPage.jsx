@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight, Leaf, Shield, Wrench, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
+import MobileSelect from "@/components/MobileSelect";
 
 const ROTATING_WORDS = ["jacket", "wetsuit", "hoodie", "t-shirt", "jeans"];
 
@@ -91,38 +92,36 @@ export default function SearchPage() {
 
           {/* Optional filters */}
           <div className="flex flex-wrap gap-3 justify-center mb-6">
-            <select
+            <MobileSelect
               value={country}
-              onChange={e => setCountry(e.target.value)}
-              className="text-sm bg-muted border border-border rounded-xl px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="Norway">Norway</option>
-              <option value="Sweden">Sweden</option>
-              <option value="Denmark">Denmark</option>
-              <option value="UK">UK</option>
-              <option value="Germany">Germany</option>
-              <option value="Netherlands">Netherlands</option>
-            </select>
-
-            <select
+              onChange={setCountry}
+              options={[
+                { value: "Norway", label: "Norway" },
+                { value: "Sweden", label: "Sweden" },
+                { value: "Denmark", label: "Denmark" },
+                { value: "UK", label: "UK" },
+                { value: "Germany", label: "Germany" },
+                { value: "Netherlands", label: "Netherlands" },
+              ]}
+            />
+            <MobileSelect
               value={preference}
-              onChange={e => setPreference(e.target.value)}
-              className="text-sm bg-muted border border-border rounded-xl px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="either">New or second-hand</option>
-              <option value="new">Buying new</option>
-              <option value="secondhand">Second-hand only</option>
-            </select>
-
-            <select
+              onChange={setPreference}
+              options={[
+                { value: "either", label: "New or second-hand" },
+                { value: "new", label: "Buying new" },
+                { value: "secondhand", label: "Second-hand only" },
+              ]}
+            />
+            <MobileSelect
               value={budget}
-              onChange={e => setBudget(e.target.value)}
-              className="text-sm bg-muted border border-border rounded-xl px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="low">Budget</option>
-              <option value="mid">Mid-range</option>
-              <option value="premium">Premium</option>
-            </select>
+              onChange={setBudget}
+              options={[
+                { value: "low", label: "Budget" },
+                { value: "mid", label: "Mid-range" },
+                { value: "premium", label: "Premium" },
+              ]}
+            />
           </div>
 
           {/* Example searches */}
@@ -186,6 +185,7 @@ export default function SearchPage() {
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
         ClaimCheck — Sustainability research for people who do not trust sustainability marketing.
       </footer>
+      <div className="mobile-bottom-spacer md:hidden" />
     </div>
   );
 }

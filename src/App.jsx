@@ -9,6 +9,7 @@ import SearchPage from './pages/SearchPage';
 import RecommendationResult from './pages/RecommendationResult';
 import Suggest from './pages/Suggest';
 import Admin from './pages/Admin';
+import BottomNav from './components/BottomNav';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -31,13 +32,16 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<SearchPage />} />
-      <Route path="/recommendation" element={<RecommendationResult />} />
-      <Route path="/suggest" element={<Suggest />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<SearchPage />} />
+        <Route path="/recommendation" element={<RecommendationResult />} />
+        <Route path="/suggest" element={<Suggest />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+      <BottomNav />
+    </>
   );
 };
 

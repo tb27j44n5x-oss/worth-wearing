@@ -145,6 +145,7 @@ export default function RecommendationResult() {
           </motion.div>
         )}
       </div>
+      <div className="mobile-bottom-spacer md:hidden" />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, Eye, Archive, CheckCircle, RefreshCw, AlertTriangle } from "lucide-react";
 import AdminReviewEditor from "./AdminReviewEditor";
@@ -9,11 +9,19 @@ const STATUS_STYLE = {
   archived:  "bg-muted text-muted-foreground",
 };
 
+const PULL_THRESHOLD = 72; // px
+
 export default function AdminReviewQueue() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("unreviewed");
   const [editing, setEditing] = useState(null); // RecommendationSet record
+
+  // Pull-to-refresh state
+  const [pullY, setPullY] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const touchStartY = useRef(null);
+  const containerRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -28,6 +36,30 @@ export default function AdminReviewQueue() {
   };
 
   useEffect(() => { load(); }, [filter]);
+
+  const handleTouchStart = useCallback((e) => {
+    if (containerRef.current?.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    if (touchStartY.current === null) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0) {
+      setIsPulling(true);
+      setPullY(Math.min(delta * 0.45, PULL_THRESHOLD + 20));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (pullY >= PULL_THRESHOLD) {
+      load();
+    }
+    setPullY(0);
+    setIsPulling(false);
+    touchStartY.current = null;
+  }, [pullY]);
 
   const archive = async (item) => {
     await base44.entities.RecommendationSet.update(item.id, { is_ai_unreviewed: false, confidence_level: "low" });
@@ -49,7 +81,29 @@ export default function AdminReviewQueue() {
   }
 
   return (
-    <div className="space-y-6">
+    <div
+      ref={containerRef}
+      className="space-y-6 relative"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull-to-refresh indicator */}
+      {isPulling && (
+        <div
+          className="flex items-center justify-center text-muted-foreground transition-all"
+          style={{ height: pullY, overflow: "hidden" }}
+        >
+          <RefreshCw
+            size={18}
+            className={pullY >= PULL_THRESHOLD ? "text-primary animate-spin" : "text-muted-foreground"}
+            style={{ transform: `rotate(${(pullY / PULL_THRESHOLD) * 360}deg)` }}
+          />
+          <span className="ml-2 text-xs">
+            {pullY >= PULL_THRESHOLD ? "Release to refresh" : "Pull to refresh"}
+          </span>
+        </div>
+      )}
       {/* Filter bar */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex gap-2">

@@ -67,5 +67,19 @@
   }
   body {
     @apply bg-background text-foreground font-inter;
+    overscroll-behavior: none;
+    /* Safe area padding for notched devices */
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Reserve bottom space for mobile nav bar + safe area */
+  .mobile-bottom-spacer {
+    height: calc(64px + env(safe-area-inset-bottom));
+  }
+  button, a[role="button"], nav a {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 }
