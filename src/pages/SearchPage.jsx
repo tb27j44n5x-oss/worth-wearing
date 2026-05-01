@@ -101,10 +101,10 @@ export default function SearchPage() {
             <button
               onClick={() => handleSearch()}
               disabled={!query.trim()}
-              className="m-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors flex items-center gap-1.5 flex-shrink-0 font-syne"
+              className="m-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 active:scale-95 disabled:opacity-40 transition-all duration-150 flex items-center gap-1.5 flex-shrink-0 font-syne disabled:cursor-not-allowed"
             >
               <span className="hidden sm:inline">Find a better buy</span>
-              <ArrowRight size={16} />
+              <ArrowRight size={16} className="transition-transform group-active:translate-x-1" />
             </button>
           </div>
 
@@ -113,7 +113,7 @@ export default function SearchPage() {
             {/* Country */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 transition-colors">
+                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150">
                   <MapPin size={15} className="text-primary/70 flex-shrink-0" />
                   <span>{country}</span>
                   <ChevronDown size={13} className="text-primary/50 ml-0.5" />
@@ -129,7 +129,7 @@ export default function SearchPage() {
             {/* Preference */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 transition-colors">
+                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150">
                   <RefreshCw size={15} className="text-primary/70 flex-shrink-0" />
                   <span>{{ either: "New or second-hand", new: "Buying new", secondhand: "Second-hand only" }[preference]}</span>
                   <ChevronDown size={13} className="text-primary/50 ml-0.5" />
@@ -145,7 +145,7 @@ export default function SearchPage() {
             {/* Budget */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 transition-colors">
+                <button className="flex items-center gap-2 px-5 py-3 bg-secondary border border-secondary rounded-full font-inter text-sm text-primary hover:bg-secondary/80 active:scale-95 transition-all duration-150">
                   <DollarSign size={15} className="text-primary/70 flex-shrink-0" />
                   <span>{{ low: "Budget", mid: "Mid-range", premium: "Premium" }[budget]}</span>
                   <ChevronDown size={13} className="text-primary/50 ml-0.5" />
@@ -165,7 +165,7 @@ export default function SearchPage() {
               <button
                 key={ex}
                 onClick={() => handleSearch(ex)}
-                className="text-sm text-muted-foreground bg-secondary/60 hover:bg-secondary hover:text-foreground px-3 py-1.5 rounded-full transition-colors border border-border"
+                className="text-sm text-muted-foreground bg-secondary/60 hover:bg-secondary hover:text-foreground active:scale-95 px-3 py-1.5 rounded-full transition-all duration-150 border border-border"
               >
                 {ex}
               </button>
