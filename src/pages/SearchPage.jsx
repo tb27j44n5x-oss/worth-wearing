@@ -209,7 +209,7 @@ export default function SearchPage() {
       <footer className="border-t border-border py-8 text-center space-y-3">
         <div className="text-sm text-muted-foreground">
           <span className="font-syne font-medium text-foreground">Worth Wearing</span>
-          {" "}— a free research tool by{" "}
+          {" "}— a free tool by{" "}
           <a href="https://patrickolsen.tech" className="underline underline-offset-2 hover:text-foreground transition-colors">Patrick Olsen.tech</a>
         </div>
         <div className="text-xs text-muted-foreground space-y-1">
