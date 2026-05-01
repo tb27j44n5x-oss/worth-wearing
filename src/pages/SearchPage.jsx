@@ -169,9 +169,9 @@ export default function SearchPage() {
           <h2 className="font-syne text-2xl font-semibold text-foreground text-center mb-8">How we pick what's worth wearing</h2>
           <div className="space-y-3">
             {[
-              { step: "🔍", title: "We scan real evidence", desc: "We look at independent audits, certification data, repair policies, and community reviews — not just what brands say about themselves." },
-              { step: "⚖️", title: "We score on what matters", desc: "Every brand is evaluated on durability, transparency, repairability, second-hand availability, and manufacturing clarity. We flag what we couldn't verify." },
-              { step: "🏆", title: "We surface the honest picks", desc: "Our recommendation shows the best overall choice, the most durable, the most transparent, and the best second-hand option — so you can decide what matters most to you." },
+              { step: "🔍", title: "AI-powered research", desc: "We use advanced AI to research each brand across materials, manufacturing, worker ethics, durability, repair practices, and supply chain transparency. We search the internet for real evidence—audits, certifications, wage data, and community reviews—not brand marketing." },
+              { step: "⚖️", title: "Score on lifecycle impact", desc: "Every brand gets scored on raw materials, manufacturing practices, transport emissions, durability, repairability, circular economy programs, and transparency. We flag what we couldn't verify and flag greenwashing risks." },
+              { step: "🏆", title: "Picks for your priorities", desc: "We show the best overall, most durable, most transparent, and best second-hand options. We surface small brands doing genuine work. You see what matters most to you—not what's best for marketing." },
             ].map(({ step, title, desc }) => (
               <div key={title} className="flex items-start gap-4 bg-card border border-border rounded-2xl px-6 py-5">
                 <span className="text-xl flex-shrink-0 mt-0.5">{step}</span>
