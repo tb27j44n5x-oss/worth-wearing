@@ -21,8 +21,19 @@ export default function SecondHandSection({ result }) {
   const uniqueBrands = [...new Set(brandOptions)];
   const searchTerm = selectedBrand ? `${result.query} ${selectedBrand}` : result.query || "";
 
-  const buildSearchUrl = (url) => {
-    return url.includes("?") ? `${url}&q=${encodeURIComponent(searchTerm)}` : `${url}?q=${encodeURIComponent(searchTerm)}`;
+  const buildSearchUrl = (baseUrl) => {
+    // Each marketplace has its own query parameter pattern
+    if (baseUrl.includes("finn.no")) {
+      return baseUrl.includes("?") ? `${baseUrl}&q=${encodeURIComponent(searchTerm)}` : `${baseUrl}?q=${encodeURIComponent(searchTerm)}`;
+    } else if (baseUrl.includes("ebay.com")) {
+      return baseUrl.replace("${encodedQuery}", encodeURIComponent(searchTerm));
+    } else if (baseUrl.includes("vinted")) {
+      return baseUrl.replace("${encodedQuery}", encodeURIComponent(searchTerm));
+    } else if (baseUrl.includes("facebook.com")) {
+      return baseUrl.replace("${encodedQuery}", encodeURIComponent(searchTerm));
+    }
+    // Fallback: try appending as query param
+    return baseUrl.includes("?") ? `${baseUrl}&q=${encodeURIComponent(searchTerm)}` : `${baseUrl}?q=${encodeURIComponent(searchTerm)}`;
   };
 
   return (
