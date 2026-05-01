@@ -80,7 +80,7 @@ export default function SearchPage() {
               type="text"
               placeholder="Try: waterproof jacket, natural rubber wetsuit"
               value={query}
-              onChange={(e) => handleInputChange(e.target.value, handleSearch)}
+              onChange={(e) => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="flex-1 px-3 sm:px-4 py-4 sm:py-5 bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base min-w-0"
             />
