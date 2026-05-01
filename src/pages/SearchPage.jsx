@@ -206,10 +206,22 @@ export default function SearchPage() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        <span className="font-syne font-medium text-foreground">Worth Wearing</span>
-        {" "}— a free research tool by{" "}
-        <a href="https://patrickolsen.tech" className="underline underline-offset-2 hover:text-foreground transition-colors">Patrick Olsen.tech</a>
+      <footer className="border-t border-border py-8 text-center space-y-3">
+        <div className="text-sm text-muted-foreground">
+          <span className="font-syne font-medium text-foreground">Worth Wearing</span>
+          {" "}— a free research tool by{" "}
+          <a href="https://patrickolsen.tech" className="underline underline-offset-2 hover:text-foreground transition-colors">Patrick Olsen.tech</a>
+        </div>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p className="font-medium text-foreground mb-2">Other free tools:</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <a href="https://followthesun.no" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline transition-colors">Follow the Sun</a>
+            <span>·</span>
+            <a href="https://minner.patrickolsen.tech" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline transition-colors">Minner</a>
+            <span>·</span>
+            <a href="https://patrickolsen.tech" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline transition-colors">More tools</a>
+          </div>
+        </div>
       </footer>
       <div className="mobile-bottom-spacer md:hidden" />
     </div>
