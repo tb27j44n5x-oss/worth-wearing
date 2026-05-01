@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import GradeBadge from "@/components/GradeBadge";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
-import { CheckCircle, Archive } from "lucide-react";
+import AdminCrawlNotifications from "@/components/admin/AdminCrawlNotifications";
+import { CheckCircle, Archive, Globe } from "lucide-react";
 
 export default function AdminReports() {
   const [reports, setReports] = useState([]);
@@ -32,6 +33,12 @@ export default function AdminReports() {
 
   return (
     <div className="space-y-6">
+      <AdminCrawlNotifications />
+
+      <div className="border-t border-border pt-6">
+        <h3 className="font-syne text-lg font-semibold text-foreground mb-4">Published Reports</h3>
+      </div>
+
       <div className="flex gap-2">
         {["pending_review", "published", "draft", "all"].map(s => (
           <button key={s} onClick={() => setFilter(s)}

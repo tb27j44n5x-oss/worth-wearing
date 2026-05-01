@@ -1,0 +1,41 @@
+{
+  "name": "CrawlNotification",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "running",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "crawl_result": {
+      "type": "object",
+      "description": "Result from the crawl operation"
+    },
+    "triggered_by": {
+      "type": "string",
+      "description": "Email of admin who triggered the crawl"
+    },
+    "triggered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "error_message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "brand_id",
+    "brand_name"
+  ]
+}
