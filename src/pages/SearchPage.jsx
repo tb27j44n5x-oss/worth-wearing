@@ -204,7 +204,7 @@ export default function SearchPage() {
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
         <span className="font-syne font-medium text-foreground">Worth Wearing</span>
         {" "}— a free research tool by{" "}
-        <a href="https://patrickolsen.tech/worth-wearing" className="underline underline-offset-2 hover:text-foreground transition-colors">Patrick Olsen.tech</a>
+        <a href="https://patrickolsen.tech" className="underline underline-offset-2 hover:text-foreground transition-colors">Patrick Olsen.tech</a>
       </footer>
       <div className="mobile-bottom-spacer md:hidden" />
     </div>
