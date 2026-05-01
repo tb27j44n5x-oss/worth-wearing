@@ -4,7 +4,7 @@ import { Search, ArrowRight, Shield, Wrench, ShoppingBag, Eye } from "lucide-rea
 import { motion } from "framer-motion";
 import MobileSelect from "@/components/MobileSelect";
 
-const ROTATING_WORDS = ["jacket", "wetsuit", "hoodie", "base layer", "rain coat"];
+const ROTATING_WORDS = ["jacket", "hoodie", "wetsuit", "base layers", "jeans", "clothes"];
 
 const EXAMPLES = [
   "waterproof shell jacket",
@@ -59,10 +59,15 @@ export default function SearchPage() {
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 
           <h1 className="font-syne text-5xl md:text-6xl font-bold text-foreground leading-[1.08] mb-4 tracking-tight">
-            Find what's worth<br />
-            <span className="text-accent italic" key={wordIndex} style={{ animation: "fadeUp 0.4s ease-out" }}>
-              wearing.
+            Find{" "}
+            <span
+              key={wordIndex}
+              className="text-accent italic inline-block"
+              style={{ animation: "fadeUp 0.4s ease-out" }}
+            >
+              {ROTATING_WORDS[wordIndex]}
             </span>
+            <br />worth wearing
           </h1>
 
           <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10 font-inter">
