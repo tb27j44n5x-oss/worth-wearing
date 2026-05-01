@@ -14,15 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
-  // Dark mode: sync with system preference
-  useEffect(() => {
-    const apply = (dark) => document.documentElement.classList.toggle("dark", dark);
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    apply(mq.matches);
-    const handler = (e) => apply(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+
 
   useEffect(() => {
     checkAppState();
