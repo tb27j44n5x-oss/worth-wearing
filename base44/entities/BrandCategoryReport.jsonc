@@ -36,8 +36,22 @@
         "unknown"
       ]
     },
+    "greenwashing_risk": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Flags where AI confidence is low or sources are weak"
+    },
     "material_score": {
-      "type": "number"
+      "type": "number",
+      "description": "Fiber type, durability, recyclability, toxicity, water footprint (0-10)"
+    },
+    "manufacturing_score": {
+      "type": "number",
+      "description": "Energy, emissions, chemical processes, water treatment, location (0-10)"
     },
     "transparency_score": {
       "type": "number"
@@ -46,7 +60,8 @@
       "type": "number"
     },
     "worker_score": {
-      "type": "number"
+      "type": "number",
+      "description": "Factory conditions, wages, safety, union representation, certifications (0-10)"
     },
     "repair_score": {
       "type": "number"
@@ -55,7 +70,8 @@
       "type": "number"
     },
     "circularity_score": {
-      "type": "number"
+      "type": "number",
+      "description": "Repair programs, take-back schemes, recycling initiatives, design-for-disassembly (0-10)"
     },
     "consumption_model_score": {
       "type": "number"
@@ -85,25 +101,32 @@
       "type": "string"
     },
     "material_argument": {
-      "type": "string"
+      "type": "string",
+      "description": "Fiber analysis: type, durability, recyclability, certifications"
     },
-    "transparency_argument": {
-      "type": "string"
+    "manufacturing_argument": {
+      "type": "string",
+      "description": "Production impact: location, energy, emissions, water treatment, chemical processes"
     },
-    "climate_argument": {
-      "type": "string"
+    "transport_argument": {
+      "type": "string",
+      "description": "CO2 from manufacturing location, distribution distance, shipping mode"
     },
     "worker_argument": {
-      "type": "string"
+      "type": "string",
+      "description": "Labor practices, wages, conditions, certifications, documented abuses"
     },
-    "repair_argument": {
-      "type": "string"
+    "use_durability_argument": {
+      "type": "string",
+      "description": "Expected lifespan, user repair history, longevity data"
     },
-    "durability_argument": {
-      "type": "string"
+    "end_of_life_argument": {
+      "type": "string",
+      "description": "Recyclability, take-back schemes, biodegradability, microfiber shedding"
     },
     "circularity_argument": {
-      "type": "string"
+      "type": "string",
+      "description": "Repair services, recycling programs, design-for-disassembly, second-hand market"
     },
     "consumption_argument": {
       "type": "string"

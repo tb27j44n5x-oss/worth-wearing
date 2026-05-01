@@ -10,6 +10,10 @@ import SummaryHeader from "@/components/recommendation/SummaryHeader";
 import SecondHandSection from "@/components/recommendation/SecondHandSection";
 import ResultFeedback from "@/components/recommendation/ResultFeedback";
 import CommunitySection from "@/components/recommendation/CommunitySection";
+import LifecycleStages from "@/components/recommendation/LifecycleStages";
+import GreenwashingRiskBadge from "@/components/recommendation/GreenwashingRiskBadge";
+import WorkerEthicsBlock from "@/components/recommendation/WorkerEthicsBlock";
+import DurabilityLogger from "@/components/DurabilityLogger";
 
 export default function RecommendationResult() {
   const [searchParams] = useSearchParams();
@@ -78,8 +82,18 @@ export default function RecommendationResult() {
         {result && !loading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
 
-            {/* Summary header */}
-            <SummaryHeader result={result} />
+            {/* Summary header with greenwashing risk */}
+            <div className="space-y-4">
+              <SummaryHeader result={result} />
+              {result.greenwashing_risk && (
+                <GreenwashingRiskBadge riskLevel={result.greenwashing_risk} explanation={result.confidence_explanation} />
+              )}
+            </div>
+
+            {/* Lifecycle stages */}
+            {result.lifecycle_stages && (
+              <LifecycleStages lifecycleData={result.lifecycle_stages} />
+            )}
 
             {/* Recommendation blocks */}
             <div className="space-y-4">
@@ -93,6 +107,12 @@ export default function RecommendationResult() {
                 )}
                 {result.best_for_transparency && (
                   <RecommendationBlock block={result.best_for_transparency} label="Most transparent" />
+                )}
+                {result.best_for_worker_ethics && (
+                  <WorkerEthicsBlock block={result.best_for_worker_ethics} />
+                )}
+                {result.best_for_circular_economy && (
+                  <RecommendationBlock block={result.best_for_circular_economy} label="Best circular economy" icon="circular" />
                 )}
                 {result.best_second_hand_choice && (
                   <RecommendationBlock block={result.best_second_hand_choice} label="Best found second-hand" icon="secondhand" />
@@ -141,6 +161,15 @@ export default function RecommendationResult() {
                   This is freshly AI-generated research that has not yet been reviewed by our team. Treat it as a starting point — not a final verdict.
                 </p>
               </div>
+            )}
+
+            {/* Durability logger */}
+            {result.best_overall?.brand_name && (
+              <DurabilityLogger 
+                brandName={result.best_overall.brand_name}
+                brandId={result.best_overall.brand_name.toLowerCase().replace(/\s+/g, '_')}
+                categoryKey={result.normalized_category}
+              />
             )}
 
             {/* User feedback */}

@@ -1,0 +1,67 @@
+{
+  "name": "BrandCorrection",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "brand_email": {
+      "type": "string",
+      "description": "Contact email from the brand submitting the correction"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "correction_type": {
+      "type": "string",
+      "enum": [
+        "material_clarification",
+        "manufacturing_details",
+        "worker_practices",
+        "certification_update",
+        "repair_program",
+        "circular_initiative",
+        "other_evidence"
+      ]
+    },
+    "claim": {
+      "type": "string",
+      "description": "What the brand is claiming or correcting"
+    },
+    "evidence_url": {
+      "type": "string",
+      "description": "Link to documentation (audit report, supplier list, transparency page, etc.)"
+    },
+    "evidence_description": {
+      "type": "string",
+      "description": "What does this evidence show?"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Admin review and decision notes"
+    },
+    "overrides_insight_id": {
+      "type": "string",
+      "description": "ID of the BrandCategoryInsight this correction updates"
+    }
+  },
+  "required": [
+    "brand_id",
+    "brand_name",
+    "category_key",
+    "correction_type",
+    "claim"
+  ]
+}

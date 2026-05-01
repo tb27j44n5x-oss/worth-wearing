@@ -1,0 +1,53 @@
+{
+  "name": "Certification",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "certification_name": {
+      "type": "string",
+      "description": "e.g. GOTS, Fair Trade, Bluesign, SA8000, B Corp, OEKO-TEX, ZDHC"
+    },
+    "certification_body": {
+      "type": "string",
+      "description": "The organization issuing the certification"
+    },
+    "scope": {
+      "type": "string",
+      "description": "What does it cover? e.g. 'Organic cotton only', 'All manufacturing', 'Dye processes'"
+    },
+    "category_key": {
+      "type": "string",
+      "description": "Product category this applies to"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_current": {
+      "type": "boolean",
+      "default": true
+    },
+    "verification_url": {
+      "type": "string",
+      "description": "Link to verify the certification"
+    },
+    "credibility_score": {
+      "type": "number",
+      "description": "1-10: How trustworthy is this certifier? Independent audits score higher."
+    }
+  },
+  "required": [
+    "brand_id",
+    "certification_name",
+    "category_key"
+  ]
+}

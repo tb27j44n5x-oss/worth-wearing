@@ -1,0 +1,66 @@
+{
+  "name": "DurabilityLog",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user logging the data"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "repair",
+        "failure",
+        "still_wearing",
+        "longevity_milestone"
+      ]
+    },
+    "months_owned": {
+      "type": "number",
+      "description": "How long have you owned this product?"
+    },
+    "repair_type": {
+      "type": "string",
+      "description": "What broke? e.g. 'zipper', 'seam', 'fabric tear', 'waterproofing failed'"
+    },
+    "repair_success": {
+      "type": "boolean",
+      "description": "Was the repair successful? Can you still use it?"
+    },
+    "repair_cost": {
+      "type": "number",
+      "description": "Cost in EUR or equivalent"
+    },
+    "used_brand_repair_service": {
+      "type": "boolean",
+      "description": "Did you use the brand's repair service?"
+    },
+    "failure_type": {
+      "type": "string",
+      "description": "What failed? e.g. 'zipper broke permanently', 'fabric deteriorated', 'waterproofing worn out'"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional context or observations"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin verification of durability claim"
+    }
+  },
+  "required": [
+    "brand_id",
+    "category_key",
+    "event_type"
+  ]
+}

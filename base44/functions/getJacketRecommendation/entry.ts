@@ -166,6 +166,42 @@ Context:
 - Confidence levels: "high" = verified third-party evidence, "medium" = partial evidence or honest first-party specifics, "low" = mostly vague brand claims, "unknown" = insufficient data.
 - WORKER TREATMENT IS A CORE SUSTAINABILITY METRIC. Research factory working conditions, wages, working hours, safety standards, union representation, and labor certification (Fair Trade, SA8000, etc.). Penalise brands with documented labor abuses or refusal to disclose factory conditions.
 
+LIFECYCLE STAGE ANALYSIS (Required for all brands):
+Evaluate each stage separately:
+1. RAW MATERIAL: Fiber type (synthetic vs natural), certifications (GOTS, OEKO-TEX), water footprint, pesticide use, recyclability
+2. MANUFACTURING: Location, energy sources, emissions, chemical processes, wastewater treatment, worker wages/conditions
+3. TRANSPORT: Distance from ${userCountry}, shipping mode (air/sea), estimated CO2 (sea shipping ~20x lower CO2 than air)
+4. USE/DURABILITY: Expected lifespan, user repair data, design-for-longevity, warranty policies, repairability
+5. END-OF-LIFE: Recyclability, take-back programs, microfiber shedding, biodegradability, circular economy initiatives
+
+EVIDENCE SOURCE WEIGHTING (Critical):
+Weight sources by credibility, NOT equally:
+- Third-party audit (9-10): Independent certifier, audited supply chain, verifiable claims
+- Certification body (8-9): Official cert provider (GOTS, Fair Trade, Bluesign, SA8000)
+- Brand transparency page (5-7): Published data, supply chain list, wage info (if detailed and specific)
+- Brand marketing/PDF (3-4): Glossy claims without specifics, vague "ethical sourcing"
+- News article (5-7): Depends on source quality; reputable outlets score higher
+- Reddit (1-3): Self-selected opinions, unverified, extreme views; use only for "product popularity" NOT sustainability claims
+
+When citing evidence, ALWAYS mention the source type and why you trust it. Flags greenwashing when:
+- Brand makes claims but refuses to name factories
+- Uses vague language ("eco-friendly" without definition)
+- Has low credibility evidence but high confidence
+- No independent verification available
+
+WORKER ETHICS SCORE (0-10):
+- 9-10: Published wage data, named factories, Fair Trade/SA8000 cert, union support
+- 7-8: Named factories, decent working condition reports, active compliance monitoring
+- 5-6: Audited suppliers but limited transparency, some wage info available
+- 3-4: Vague "ethical sourcing" claims, no specific factory names
+- 1-2: Documented labor violations, refusal to disclose, greenwashing on workers
+- 0: Active labor abuse, forced labor evidence
+
+GREENWASHING RISK FLAG:
+Return "low" if: high confidence, weighted evidence, multiple independent sources
+Return "medium" if: some conflicting info, mixed evidence credibility, limited transparency
+Return "high" if: low confidence, only brand-owned sources, vague claims, zero independent verification
+
 ${knownBrandsContext}
 
 YOUR TASKS:
@@ -192,7 +228,12 @@ SCORING FOR SMALL BRANDS — apply a different lens:
 - Do NOT penalise a small brand for not having Bluesign or Fair Trade certification — these cost tens of thousands of euros. Instead, reward honest acknowledgment of this gap.
 - DO penalise greenwashing even from small brands — vague "eco-friendly" or "sustainable materials" claims with zero specifics are a red flag at any size.
 - For worker treatment: a small brand that names its factories and publishes wage data or working condition notes scores HIGHER than a large brand claiming "ethical sourcing" with no specifics. Documented labor violations or refusal to disclose factory conditions are serious red flags at any size.
-- TRANSPORT CO2: Brands manufacturing closer to ${userCountry} should score HIGHER on environmental impact and manufacturing clarity. Calculate approximate transport distance; nearer = lower CO2 footprint from shipping.
+- TRANSPORT CO2: Be honest about CO2 calculations. Include these factors:
+  * Manufacturing location distance from ${userCountry}
+  * Shipping mode (air ~1000g CO2/kg, sea ~50g CO2/kg)
+  * Supply chain origins (where raw materials come from)
+  * Admit limitations: "Estimated based on typical sea shipping" vs "Calculated from published data"
+  * Distinguish between "we found limited info" and "manufacturing is far so high CO2"
 
 why_chosen for the independent_brand_spotlight must quote or closely paraphrase SPECIFIC language found on their website — not generic praise. If you find a specific page or blog post where they discuss limitations, cite it.
 
@@ -203,8 +244,12 @@ TONE RULES:
 - "evidence_snippets": concrete citable facts only (e.g. "Patagonia publishes a full supplier list at patagonia.com/sourcing").
 - reddit_sentiment: summarise what real users say — good and bad. Do not sanitise negative feedback.
 - Include worker treatment insights in all relevant sections. Brands that hide factory conditions or have documented labor abuses deserve skepticism.
-- When discussing fabric/materials, include specific fiber types (synthetic vs. natural, recycled content, durability expectations) and their environmental footprint. Detail any certifications like OEKO-TEX, GOTS, etc.
-- Always mention manufacturing location and estimate transport CO2 impact relative to ${userCountry}. Closer production = lower environmental cost.
+- MATERIAL STAGE: Always specify fiber type, durability (years of expected use), certifications (credibility score), recyclability, toxins (dyes, PFOA, etc.), water footprint. Distinguish: 100% polyester that lasts 10 years can have LOWER total footprint than 100% organic cotton lasting 2 years.
+- MANUFACTURING STAGE: Location, energy sources, chemical/dye processes, water treatment, worker wages/conditions (dedicated worker_score).
+- TRANSPORT STAGE: Manufacturing origin distance, shipping mode, estimated CO2. Admit limits: "Assuming sea shipping" vs "Verified" mode.
+- USE STAGE: Lifespan expectation, repair services, warranty, design-for-longevity, user durability data (from DurabilityLog entity).
+- END-OF-LIFE STAGE: Recycling programs, take-back schemes, microfiber risk, biodegradability, circular economy design.
+- SOURCE WEIGHTING: Cite source credibility. If a claim relies only on brand marketing, say "Brand claims (unverified)" not "Evidence shows..."
 
 Keep all text fields concise. Limit detailed_table to max 8 brands. Limit evidence_snippets to max 2 items per brand block.
 
@@ -214,20 +259,34 @@ OUTPUT as JSON:
   "summary_verdict": string (2-3 sentences, honest and direct),
   "confidence_level": "high"|"medium"|"low"|"unknown",
   "confidence_explanation": string (1-2 sentences — WHY this confidence level),
+  "greenwashing_risk": "low"|"medium"|"high" (flag where confidence is low or sources are weak),
   "evidence_notes": string,
-  "what_we_know": string[] (3-4 concrete things with solid evidence),
+  "what_we_know": string[] (3-4 concrete things with solid evidence — cite source type),
   "what_we_dont_know": string[] (3-4 specific gaps),
   "second_hand_advice": string (2-3 sentences, practical),
   "best_overall": {
     "brand_name": string, "verdict": string, "why_chosen": string,
     "main_known_evidence": string, "main_unknown": string,
-    "evidence_snippets": string[] (max 2),
+    "evidence_snippets": string[] (max 2, include source credibility),
     "evidence_confidence": "high"|"medium"|"low"|"unknown",
     "recommended_buying_route": "buy_new"|"buy_secondhand"|"research_further",
     "product_url": string, "website": string
   },
   "best_for_durability": { (same shape as best_overall) },
   "best_for_transparency": { (same shape as best_overall) },
+  "best_for_worker_ethics": {
+    (same shape as best_overall)
+    "worker_score": number (0-10),
+    "wage_transparency": string,
+    "factory_conditions": string,
+    "labor_certifications": string
+  },
+  "best_for_circular_economy": {
+    (same shape as best_overall)
+    "repair_programs": string,
+    "take_back_schemes": string,
+    "recycling_initiatives": string
+  },
   "best_second_hand_choice": {
     (same shape as best_overall, plus:)
     "secondhand_why": string, "secondhand_tips": string
@@ -235,22 +294,35 @@ OUTPUT as JSON:
   "biggest_unknown": { (same shape as best_overall) },
   "detailed_table": [
     {
-      "brand_name": string, "overall_score": number, "durability_score": number,
-      "transparency_score": number, "repairability_score": number,
-      "secondhand_score": number, "manufacturing_clarity_score": number,
+      "brand_name": string,
+      "overall_score": number,
+      "material_score": number,
+      "manufacturing_score": number,
+      "worker_score": number,
+      "durability_score": number,
+      "transparency_score": number,
+      "circularity_score": number,
       "confidence_level": "high"|"medium"|"low"|"unknown",
-      "recommended_buying_route": string, "is_reviewed": false, "website": string,
-      "reddit_sentiment": string
+      "greenwashing_risk": "low"|"medium"|"high",
+      "recommended_buying_route": string,
+      "website": string
     }
   ],
+  "lifecycle_stages": {
+    "raw_material": string (fiber type, certifications, water/pesticide impact),
+    "manufacturing": string (location, energy, emissions, worker practices),
+    "transport": string (distance, mode, estimated CO2 with assumptions noted),
+    "use_durability": string (lifespan, repair-ability, warranty),
+    "end_of_life": string (recyclability, take-back, microfiber risk)
+  },
   "second_hand_links": [
     { "platform": string, "search_url": string, "note": string }
   ],
   "independent_brand_spotlight": {
     "brand_name": string,
     "verdict": string,
-    "why_chosen": string (why this small brand stands out — what they say honestly, not just what they claim),
-    "reddit_sentiment": string (what Reddit/community says about them — positive AND negative),
+    "why_chosen": string,
+    "reddit_sentiment": string,
     "main_known_evidence": string,
     "main_unknown": string,
     "evidence_confidence": "high"|"medium"|"low"|"unknown",
