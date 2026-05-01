@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useFetchData } from "@/hooks/useFetchData";
-import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import MobileHeader from "@/components/MobileHeader";
 import { motion } from "framer-motion";
 import LazySection from "@/components/LazySection";
@@ -30,6 +30,20 @@ export default function RecommendationResult() {
 
   const [circularFilter, setCircularFilter] = useState(false);
   const [crawlData, setCrawlData] = useState(null);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!loading) return;
+    
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return 90;
+        return prev + Math.random() * 25;
+      });
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const { data: result, loading, error, refetch } = useFetchData(
     async () => {
@@ -76,17 +90,45 @@ export default function RecommendationResult() {
           <p className="text-sm text-muted-foreground mt-1">{country} · {preference === "secondhand" ? "Second-hand only" : preference === "new" ? "Buying new" : "New or second-hand"} · {budget} budget</p>
         </div>
 
-        {/* Loading */}
+        {/* Loading with progress */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <Loader2 className="animate-spin text-primary mb-4" size={36} />
-            <p className="font-syne text-xl font-semibold text-foreground mb-2">Researching 8-10 brands…</p>
-            <p className="text-sm text-muted-foreground max-w-sm mb-4">
-              Analyzing durability, worker ethics, transparency, and supply chains. This typically takes <strong>15-40 seconds</strong>.
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
-              <span>Checking evidence sources & Reddit sentiment</span>
+          <div className="space-y-6 py-16">
+            <div className="space-y-3">
+              <p className="font-syne text-2xl font-semibold text-foreground">Researching brands…</p>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Analyzing durability, worker ethics, transparency, and supply chains. This typically takes <strong>15-40 seconds</strong>.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {/* Progress bar */}
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary via-accent to-primary rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              {/* Progress stages */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Gathering data", threshold: 25 },
+                  { label: "Checking evidence", threshold: 50 },
+                  { label: "Analyzing supply chains", threshold: 75 },
+                  { label: "Finalizing report", threshold: 90 }
+                ].map((stage) => (
+                  <div key={stage.label} className="text-center">
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full mx-auto mb-2 ${progress >= stage.threshold ? "bg-emerald-100" : "bg-muted"}`}>
+                      <span className={`text-xs font-bold ${progress >= stage.threshold ? "text-emerald-700" : "text-muted-foreground"}`}>
+                        {progress >= stage.threshold ? "✓" : "●"}
+                      </span>
+                    </div>
+                    <p className={`text-xs font-medium ${progress >= stage.threshold ? "text-foreground" : "text-muted-foreground"}`}>
+                      {stage.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
