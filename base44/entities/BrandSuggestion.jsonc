@@ -1,0 +1,53 @@
+{
+  "name": "BrandSuggestion",
+  "type": "object",
+  "properties": {
+    "brand_name": {
+      "type": "string"
+    },
+    "brand_website": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "submitted_by": {
+      "type": "string"
+    },
+    "upvotes": {
+      "type": "number",
+      "default": 0
+    },
+    "upvoted_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ai_verification_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "running",
+        "verified",
+        "rejected",
+        "insufficient_data"
+      ],
+      "default": "pending"
+    },
+    "ai_verdict": {
+      "type": "string"
+    },
+    "report_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "brand_name",
+    "category",
+    "submitted_by"
+  ]
+}

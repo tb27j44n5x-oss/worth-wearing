@@ -7,6 +7,8 @@ import RecommendationBlock from "@/components/recommendation/RecommendationBlock
 import DetailedTable from "@/components/recommendation/DetailedTable";
 import SummaryHeader from "@/components/recommendation/SummaryHeader";
 import SecondHandSection from "@/components/recommendation/SecondHandSection";
+import ResultFeedback from "@/components/recommendation/ResultFeedback";
+import CommunitySection from "@/components/recommendation/CommunitySection";
 
 export default function RecommendationResult() {
   const [searchParams] = useSearchParams();
@@ -96,8 +98,12 @@ export default function RecommendationResult() {
               )}
             </div>
 
-            {/* Second-hand section */}
-            <SecondHandSection result={result} />
+            {/* Second-hand section — shown prominently */}
+            {(result.second_hand_links?.length > 0 || result.second_hand_advice) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                <SecondHandSection result={result} />
+              </div>
+            )}
 
             {/* Detailed table */}
             {result.detailed_table?.length > 0 && (
@@ -117,17 +123,21 @@ export default function RecommendationResult() {
               <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
                 <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800 leading-relaxed">
-                  This is freshly AI-generated research that has not yet been reviewed by our team. We have tried to be careful, but treat it as a starting point — not a final verdict.
+                  This is freshly AI-generated research that has not yet been reviewed by our team. Treat it as a starting point — not a final verdict.
                 </p>
               </div>
             )}
 
-            {/* Footer actions */}
-            <div className="border-t border-border pt-6 flex flex-wrap gap-4 items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Know a brand we should include?{" "}
-                <Link to="/suggest" className="text-primary underline underline-offset-2 hover:text-primary/80">Suggest a brand</Link>
-              </p>
+            {/* User feedback */}
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <ResultFeedback query={query} recommendationSetId={result.recommendation_set_id} />
+            </div>
+
+            {/* Community suggestions */}
+            <CommunitySection category={result.normalized_category} />
+
+            {/* Footer */}
+            <div className="border-t border-border pt-6 flex justify-end">
               <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                 <ArrowLeft size={14} /> Start a new search
               </Link>

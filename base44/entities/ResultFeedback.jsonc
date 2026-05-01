@@ -1,0 +1,33 @@
+{
+  "name": "ResultFeedback",
+  "type": "object",
+  "properties": {
+    "recommendation_set_id": {
+      "type": "string"
+    },
+    "query": {
+      "type": "string"
+    },
+    "vote": {
+      "type": "string",
+      "enum": [
+        "up",
+        "down"
+      ]
+    },
+    "comment": {
+      "type": "string"
+    },
+    "submitter_email": {
+      "type": "string"
+    },
+    "is_anonymous": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "query",
+    "vote"
+  ]
+}
