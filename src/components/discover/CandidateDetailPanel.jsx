@@ -86,7 +86,7 @@ export default function CandidateDetailPanel({ brand, onClose, onRefresh }) {
     setRejecting(true);
     setActionMsg(null);
     try {
-      await base44.entities.CandidateBrand.update(brand.id, { verification_status: "rejected" });
+      await base44.functions.invoke("rejectCandidateBrand", { candidate_brand_id: brand.id });
       setActionMsg({ type: "success", text: "Candidate marked as rejected." });
       onRefresh();
     } catch (err) {

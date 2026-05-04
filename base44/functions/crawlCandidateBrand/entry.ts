@@ -176,6 +176,12 @@ Deno.serve(async (req) => {
   }
 
   const base44 = createClientFromRequest(req);
+
+  const user = await base44.auth.me();
+  if (!user || user.role !== 'admin') {
+    return Response.json({ error: 'Admin access required' }, { status: 403 });
+  }
+
   const { candidate_brand_id } = await req.json();
 
   if (!candidate_brand_id) {
@@ -264,8 +270,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── Save CrawlAttempt records (async, non-blocking) ──────────────────────────
-  Promise.allSettled(
+  // ── Save CrawlAttempt records (awaited for reliability) ──────────────────────
+  await Promise.allSettled(
     crawlAttempts.slice(0, 50).map(a =>
       base44.asServiceRole.entities.CrawlAttempt.create({
         candidate_brand_id,
@@ -375,16 +381,24 @@ Also assess:
 
   const signals = extraction?.signals || [];
 
-  // Save BrandSignal records
+  // Valid enum values for BrandSignal — sanitize LLM output before saving
+  const VALID_SIGNAL_TYPES = new Set([
+    'material', 'production_location', 'factory', 'repair', 'warranty',
+    'durability', 'circularity', 'worker_ethics', 'sustainability_claim',
+    'greenwashing_risk', 'stockist', 'founder_note', 'other',
+  ]);
+  const VALID_EVIDENCE_STRENGTHS = new Set(['strong', 'medium', 'weak', 'unverified']);
+
+  // Save BrandSignal records — sanitize enum values from LLM output
   await Promise.allSettled(signals.map(s =>
     base44.asServiceRole.entities.BrandSignal.create({
       candidate_brand_id,
       brand_name: candidate.name,
-      signal_type: s.signal_type || 'other',
+      signal_type: VALID_SIGNAL_TYPES.has(s.signal_type) ? s.signal_type : 'other',
       claim_text: s.claim_text,
       source_url: s.source_url || baseUrl,
       source_platform: 'brand_website',
-      evidence_strength: s.evidence_strength || 'unverified',
+      evidence_strength: VALID_EVIDENCE_STRENGTHS.has(s.evidence_strength) ? s.evidence_strength : 'unverified',
       is_brand_owned: s.is_brand_owned !== false,
       extracted_at: now,
       needs_manual_review: s.needs_manual_review || false,

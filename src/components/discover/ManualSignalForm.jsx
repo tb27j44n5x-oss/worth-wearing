@@ -25,16 +25,12 @@ export default function ManualSignalForm({ brandId, brandName, baseUrl, onSaved,
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await base44.entities.BrandSignal.create({
+    await base44.functions.invoke("createManualBrandSignal", {
       candidate_brand_id: brandId,
-      brand_name: brandName,
       signal_type: form.signal_type,
       claim_text: form.claim_text,
       source_url: form.source_url || baseUrl || "",
-      source_platform: "brand_website",
       evidence_strength: form.evidence_strength,
-      is_brand_owned: true,
-      extracted_at: new Date().toISOString(),
       needs_manual_review: form.needs_manual_review,
       review_note: form.review_note,
     });

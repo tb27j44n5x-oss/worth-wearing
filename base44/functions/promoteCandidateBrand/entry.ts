@@ -45,29 +45,35 @@ Deno.serve(async (req) => {
   const categoryKey = (candidate.category_tags || [])[0] || candidate.created_from_query || 'unknown';
   const normalizedCategoryKey = categoryKey.toLowerCase().replace(/\s+/g, '_');
 
+  // Map CandidateBrand size_estimate → Brand size_estimate (Brand doesn't support micro/unknown)
+  const SIZE_MAP = { micro: 'niche', small: 'small', medium: 'medium', large: 'large' };
+  const brandSizeEstimate = SIZE_MAP[candidate.size_estimate] || null; // omit if unknown
+
   // Create or update Brand
   const existingBrands = await base44.asServiceRole.entities.Brand.filter({ name: candidate.name }).catch(() => []);
   let brandId;
   if (existingBrands.length > 0) {
     brandId = existingBrands[0].id;
+    const sizeUpdate = brandSizeEstimate ? { size_estimate: brandSizeEstimate } : {};
     await base44.asServiceRole.entities.Brand.update(brandId, {
       website: candidate.website || existingBrands[0].website,
       country: candidate.country || existingBrands[0].country,
-      categories: [...new Set([...( existingBrands[0].categories || []), normalizedCategoryKey])],
-      size_estimate: candidate.size_estimate === 'unknown' ? existingBrands[0].size_estimate : candidate.size_estimate,
+      categories: [...new Set([...(existingBrands[0].categories || []), normalizedCategoryKey])],
+      ...sizeUpdate,
       status: 'pending',
       last_researched_at: now,
     });
   } else {
-    const newBrand = await base44.asServiceRole.entities.Brand.create({
+    const createPayload = {
       name: candidate.name,
       website: candidate.website || '',
       country: candidate.country || '',
       categories: [normalizedCategoryKey],
-      size_estimate: candidate.size_estimate || 'unknown',
       status: 'pending',
       last_researched_at: now,
-    });
+    };
+    if (brandSizeEstimate) createPayload.size_estimate = brandSizeEstimate;
+    const newBrand = await base44.asServiceRole.entities.Brand.create(createPayload);
     brandId = newBrand.id;
   }
 

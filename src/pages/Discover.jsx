@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import NavBar from "@/components/NavBar";
-import { RefreshCw, Globe, Users, Star, Search, ChevronRight, XCircle, CheckCircle } from "lucide-react";
+import { RefreshCw, Globe, Users, Star, ChevronRight } from "lucide-react";
 import CandidateDetailPanel from "@/components/discover/CandidateDetailPanel";
+import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
   { key: "published",  label: "Published" },
@@ -19,7 +20,7 @@ const STATUS_STYLES = {
   rejected:     "bg-red-50 text-red-700 border-red-200",
 };
 
-function CandidateCard({ brand, onOpenDetail }) {
+function CandidateCard({ brand, onOpenDetail, isAdmin }) {
   const statusStyle = STATUS_STYLES[brand.verification_status] || STATUS_STYLES.new;
   const isActionable = brand.verification_status !== "promoted" && brand.verification_status !== "rejected";
 
@@ -63,14 +64,16 @@ function CandidateCard({ brand, onOpenDetail }) {
         {brand.confidence_level && <span className="font-medium">{brand.confidence_level} confidence</span>}
       </div>
 
-      {/* Action row */}
-      <button
-        onClick={() => onOpenDetail(brand)}
-        className="w-full flex items-center justify-center gap-1.5 py-2 bg-muted hover:bg-secondary text-foreground rounded-xl text-xs font-medium transition-colors"
-      >
-        {isActionable ? "Review & manage" : "View details"}
-        <ChevronRight size={12} />
-      </button>
+      {/* Action row — admin only */}
+      {isAdmin && (
+        <button
+          onClick={() => onOpenDetail(brand)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 bg-muted hover:bg-secondary text-foreground rounded-xl text-xs font-medium transition-colors"
+        >
+          {isActionable ? "Review & manage" : "View details"}
+          <ChevronRight size={12} />
+        </button>
+      )}
     </div>
   );
 }
@@ -145,6 +148,9 @@ function PublishedCard({ report }) {
 }
 
 export default function Discover() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
   const [activeTab, setActiveTab] = useState("candidates");
   const [published, setPublished]   = useState([]);
   const [candidates, setCandidates] = useState([]);
@@ -236,17 +242,19 @@ export default function Discover() {
             <h1 className="font-syne text-4xl font-bold text-foreground">Discover</h1>
             <p className="text-muted-foreground mt-2">Pipeline of local & independent brands under evaluation.</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <RefreshCw size={14} />
-            Run discovery
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <RefreshCw size={14} />
+              Run discovery
+            </button>
+          )}
         </div>
 
-        {/* Discovery form */}
-        {showForm && (
+        {/* Discovery form — admin only */}
+        {isAdmin && showForm && (
           <div className="bg-card border border-border rounded-2xl p-6 mb-6 space-y-4">
             <h2 className="font-syne text-lg font-semibold text-foreground">Discovery parameters</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -357,6 +365,7 @@ export default function Discover() {
                   <CandidateCard
                     key={b.id}
                     brand={b}
+                    isAdmin={isAdmin}
                     onOpenDetail={handleOpenDetail}
                   />
                 ))

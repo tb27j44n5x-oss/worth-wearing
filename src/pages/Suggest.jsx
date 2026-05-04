@@ -82,20 +82,40 @@ export default function Suggest() {
         } catch { return null; }
       };
 
-      // Create CandidateBrand immediately so it shows up in Discover
-      await base44.entities.CandidateBrand.create({
-        name: form.brand_name.trim(),
-        website: form.submitted_source_url || "",
-        normalized_domain: normalizeDomain(form.submitted_source_url),
-        category_tags: form.category ? [form.category] : [],
-        discovery_source: "user_suggestion",
-        source_platform: "user_suggestion",
-        sustainability_claims_raw: form.note ? [form.note] : [],
-        confidence_level: "unknown",
-        verification_status: "new",
-        created_from_query: form.note,
-        last_discovered_at: new Date().toISOString(),
-      }).catch(() => null);
+      const normalizedDomain = normalizeDomain(form.submitted_source_url);
+      const now = new Date().toISOString();
+
+      // Deduplicate: check by normalized_domain first, then by name
+      let existingCandidate = null;
+      if (normalizedDomain) {
+        const byDomain = await base44.entities.CandidateBrand.filter({ normalized_domain: normalizedDomain }).catch(() => []);
+        existingCandidate = byDomain[0] || null;
+      }
+
+      if (existingCandidate) {
+        // Update existing candidate — append note and refresh timestamp
+        const updatedClaims = [...new Set([...(existingCandidate.sustainability_claims_raw || []), ...(form.note ? [form.note] : [])])];
+        await base44.entities.CandidateBrand.update(existingCandidate.id, {
+          sustainability_claims_raw: updatedClaims,
+          last_discovered_at: now,
+          admin_notes: (existingCandidate.admin_notes || '') + `\n[Re-suggested by ${user?.email || "anonymous"} at ${now}]`,
+        }).catch(() => null);
+      } else {
+        // Create new CandidateBrand
+        await base44.entities.CandidateBrand.create({
+          name: form.brand_name.trim(),
+          website: form.submitted_source_url || "",
+          normalized_domain: normalizedDomain,
+          category_tags: form.category ? [form.category] : [],
+          discovery_source: "user_suggestion",
+          source_platform: "user_suggestion",
+          sustainability_claims_raw: form.note ? [form.note] : [],
+          confidence_level: "unknown",
+          verification_status: "new",
+          created_from_query: form.note,
+          last_discovered_at: now,
+        }).catch(() => null);
+      }
 
       // Trigger AI verification if suggestion was created
       if (suggestion?.id) {
