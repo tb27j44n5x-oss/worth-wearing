@@ -89,7 +89,7 @@ export default function SearchPage() {
               disabled={!query.trim()}
               className="m-2 sm:m-3 px-3 sm:px-5 py-3 sm:py-4 bg-primary text-primary-foreground rounded-xl text-xs sm:text-sm font-medium hover:bg-primary/90 active:scale-95 disabled:opacity-40 transition-all duration-150 flex items-center gap-1.5 flex-shrink-0 font-syne disabled:cursor-not-allowed min-h-[48px] sm:min-h-[52px]"
             >
-              <span className="hidden sm:inline">Find a better buy</span>
+              <span className="hidden sm:inline">Search</span>
               <ArrowRight size={16} className="transition-transform group-active:translate-x-1" />
             </button>
           </div>
