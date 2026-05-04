@@ -148,18 +148,7 @@ export default function SearchPage() {
             </DropdownMenu>
           </div>
 
-          {/* Example searches */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {EXAMPLES.map(ex => (
-              <button
-                key={ex}
-                onClick={() => handleSearch(ex)}
-                className="text-xs sm:text-sm text-muted-foreground bg-secondary/60 hover:bg-secondary hover:text-foreground active:scale-95 px-3 sm:px-4 py-2.5 sm:py-2 rounded-full transition-all duration-150 border border-border"
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
+
         </motion.div>
       </section>
 
