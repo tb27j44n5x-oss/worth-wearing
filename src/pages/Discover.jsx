@@ -5,10 +5,15 @@ import { RefreshCw, Globe, Users, Star, ChevronRight } from "lucide-react";
 import CandidateDetailPanel from "@/components/discover/CandidateDetailPanel";
 import { useAuth } from "@/lib/AuthContext";
 
-const TABS = [
+const ADMIN_TABS = [
   { key: "published",  label: "Published" },
   { key: "candidates", label: "New Candidates" },
   { key: "review",     label: "Needs Review" },
+  { key: "community",  label: "Community" },
+];
+
+const PUBLIC_TABS = [
+  { key: "published",  label: "Published" },
   { key: "community",  label: "Community" },
 ];
 
@@ -151,7 +156,8 @@ export default function Discover() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  const [activeTab, setActiveTab] = useState("candidates");
+  const TABS = isAdmin ? ADMIN_TABS : PUBLIC_TABS;
+  const [activeTab, setActiveTab] = useState(isAdmin ? "candidates" : "published");
   const [published, setPublished]   = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [reviewNeeded, setReviewNeeded] = useState([]);
@@ -169,16 +175,29 @@ export default function Discover() {
 
   const loadData = async () => {
     setLoading(true);
-    const [allCandidates, allSuggestions, publishedReports] = await Promise.all([
-      base44.entities.CandidateBrand.list("-last_discovered_at", 100).catch(() => []),
+
+    const baseLoads = [
       base44.entities.BrandSuggestion.list("-created_date", 30).catch(() => []),
       base44.entities.BrandCategoryReport.filter({ status: "published" }, "-published_at", 20).catch(() => []),
-    ]);
+    ];
 
-    setCandidates(allCandidates.filter(c => c.verification_status === "new" || c.verification_status === "crawled"));
-    setReviewNeeded(allCandidates.filter(c => c.verification_status === "needs_review"));
-    setSuggestions(allSuggestions);
-    setPublished(publishedReports);
+    if (isAdmin) {
+      const [allSuggestions, publishedReports, allCandidates] = await Promise.all([
+        ...baseLoads,
+        base44.entities.CandidateBrand.list("-last_discovered_at", 100).catch(() => []),
+      ]);
+      setCandidates(allCandidates.filter(c => c.verification_status === "new" || c.verification_status === "crawled"));
+      setReviewNeeded(allCandidates.filter(c => c.verification_status === "needs_review"));
+      setSuggestions(allSuggestions);
+      setPublished(publishedReports);
+    } else {
+      const [allSuggestions, publishedReports] = await Promise.all(baseLoads);
+      setCandidates([]);
+      setReviewNeeded([]);
+      setSuggestions(allSuggestions);
+      setPublished(publishedReports);
+    }
+
     setLoading(false);
   };
 

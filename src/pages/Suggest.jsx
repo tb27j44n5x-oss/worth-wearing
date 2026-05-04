@@ -52,76 +52,13 @@ export default function Suggest() {
     e.preventDefault();
     setLoading(true);
 
-    // Always create UserCorrection for admin queue
-    await base44.entities.UserCorrection.create({
+    await base44.functions.invoke("submitBrandSuggestion", {
       correction_type: form.correction_type,
       brand_name: form.brand_name,
       note: form.note,
       submitted_source_url: form.submitted_source_url,
-      status: "pending",
+      category: form.category,
     });
-
-    // For new brand suggestions: also create BrandSuggestion + CandidateBrand pipeline
-    if (form.correction_type === "new_brand" && form.brand_name.trim()) {
-      // Create BrandSuggestion (connects to verifySuggestion)
-      const suggestion = await base44.entities.BrandSuggestion.create({
-        brand_name: form.brand_name.trim(),
-        brand_website: form.submitted_source_url || "",
-        category: form.category || "",
-        note: form.note,
-        submitted_by: user?.email || "anonymous",
-        ai_verification_status: "pending",
-      }).catch(() => null);
-
-      // Compute normalized_domain for deduplication
-      const normalizeDomain = (url) => {
-        if (!url) return null;
-        try {
-          const withProto = url.startsWith('http') ? url : `https://${url}`;
-          return new URL(withProto).hostname.replace(/^www\./, '').toLowerCase();
-        } catch { return null; }
-      };
-
-      const normalizedDomain = normalizeDomain(form.submitted_source_url);
-      const now = new Date().toISOString();
-
-      // Deduplicate: check by normalized_domain first, then by name
-      let existingCandidate = null;
-      if (normalizedDomain) {
-        const byDomain = await base44.entities.CandidateBrand.filter({ normalized_domain: normalizedDomain }).catch(() => []);
-        existingCandidate = byDomain[0] || null;
-      }
-
-      if (existingCandidate) {
-        // Update existing candidate — append note and refresh timestamp
-        const updatedClaims = [...new Set([...(existingCandidate.sustainability_claims_raw || []), ...(form.note ? [form.note] : [])])];
-        await base44.entities.CandidateBrand.update(existingCandidate.id, {
-          sustainability_claims_raw: updatedClaims,
-          last_discovered_at: now,
-          admin_notes: (existingCandidate.admin_notes || '') + `\n[Re-suggested by ${user?.email || "anonymous"} at ${now}]`,
-        }).catch(() => null);
-      } else {
-        // Create new CandidateBrand
-        await base44.entities.CandidateBrand.create({
-          name: form.brand_name.trim(),
-          website: form.submitted_source_url || "",
-          normalized_domain: normalizedDomain,
-          category_tags: form.category ? [form.category] : [],
-          discovery_source: "user_suggestion",
-          source_platform: "user_suggestion",
-          sustainability_claims_raw: form.note ? [form.note] : [],
-          confidence_level: "unknown",
-          verification_status: "new",
-          created_from_query: form.note,
-          last_discovered_at: now,
-        }).catch(() => null);
-      }
-
-      // Trigger AI verification if suggestion was created
-      if (suggestion?.id) {
-        base44.functions.invoke("verifySuggestion", { suggestion_id: suggestion.id }).catch(() => {});
-      }
-    }
 
     setSubmitted(true);
     setLoading(false);
