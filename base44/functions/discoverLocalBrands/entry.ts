@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const BRAVE_API_KEY = Deno.env.get("BRAVE_SEARCH_API_KEY");
-
 // Language-specific sustainability discovery terms by country
 const LOCAL_TERMS = {
   norway: {
@@ -15,7 +13,7 @@ const LOCAL_TERMS = {
     sustainability: ["hållbara kläder", "slow fashion Sverige", "spårbar produktion", "småskaligt klädmärke"],
     production: ["tillverkad i Sverige", "tillverkad i Europa", "svenskt klädesföretag"],
     material: ["merinoull", "återvunna material", "ekologisk bomull", "gots certifierad"],
-    repair: ["reparation kläder", "klädlagnign", "livstidsgaranti kläder"],
+    repair: ["reparation kläder", "klädlagning", "livstidsgaranti kläder"],
     discovery: ["klädmärke Stockholm", "klädmärke Göteborg", "friluftskläder ull Sverige"],
   },
   denmark: {
@@ -27,25 +25,53 @@ const LOCAL_TERMS = {
   },
 };
 
-function getLocalTerms(country) {
+// Locale params per country for Brave Search API
+const BRAVE_LOCALE = {
+  norway:  { country: 'NO', search_lang: 'no', ui_lang: 'nb-NO' },
+  sweden:  { country: 'SE', search_lang: 'sv', ui_lang: 'sv-SE' },
+  denmark: { country: 'DK', search_lang: 'da', ui_lang: 'da-DK' },
+  default: { country: 'US', search_lang: 'en', ui_lang: 'en-US' },
+};
+
+function getCountryKey(country) {
   const key = country.toLowerCase().replace(/\s/g, '');
-  if (key.includes('norw') || key === 'norway' || key === 'no') return LOCAL_TERMS.norway;
-  if (key.includes('swed') || key === 'sweden' || key === 'se') return LOCAL_TERMS.sweden;
-  if (key.includes('denm') || key === 'denmark' || key === 'dk') return LOCAL_TERMS.denmark;
-  return LOCAL_TERMS.norway; // fallback
+  if (key.includes('norw') || key === 'norway' || key === 'no' || key.includes('norsk') || key.includes('nordic')) return 'norway';
+  if (key.includes('swed') || key === 'sweden' || key === 'se') return 'sweden';
+  if (key.includes('denm') || key === 'denmark' || key === 'dk') return 'denmark';
+  return null;
 }
 
-// Brave Search API call
-async function braveSearch(query, count = 10) {
-  const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${count}&search_lang=en&safesearch=moderate`;
+function getLocalTerms(country) {
+  const key = getCountryKey(country);
+  return key ? LOCAL_TERMS[key] : LOCAL_TERMS.norway;
+}
+
+function getBraveLocale(country) {
+  const key = getCountryKey(country);
+  return key ? BRAVE_LOCALE[key] : BRAVE_LOCALE.default;
+}
+
+// Brave Search API call with locale params
+async function braveSearch(query, count, locale, apiKey) {
+  const params = new URLSearchParams({
+    q: query,
+    count: String(count),
+    country: locale.country,
+    search_lang: locale.search_lang,
+    ui_lang: locale.ui_lang,
+    safesearch: 'moderate',
+  });
+  const url = `https://api.search.brave.com/res/v1/web/search?${params}`;
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/json',
       'Accept-Encoding': 'gzip',
-      'X-Subscription-Token': BRAVE_API_KEY,
+      'X-Subscription-Token': apiKey,
     }
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    throw new Error(`Brave returned ${res.status}: ${await res.text().catch(() => 'no body')}`);
+  }
   const data = await res.json();
   return data.web?.results || [];
 }
@@ -60,7 +86,7 @@ function extractDomain(url) {
   }
 }
 
-// Filter out non-brand domains (retailers, magazines, etc.)
+// Filter out non-brand domains
 const EXCLUDED_DOMAINS = [
   'amazon', 'ebay', 'zalando', 'asos', 'hm.com', 'zara', 'uniqlo',
   'wikipedia', 'reddit', 'instagram', 'facebook', 'youtube', 'tiktok',
@@ -76,7 +102,6 @@ function isExcluded(domain) {
   return EXCLUDED_DOMAINS.some(ex => domain.includes(ex));
 }
 
-// Normalise brand name from a domain
 function domainToBrandName(domain) {
   return domain
     .replace(/\.(com|no|se|dk|co\.uk|org|net|io)$/, '')
@@ -85,50 +110,74 @@ function domainToBrandName(domain) {
 }
 
 Deno.serve(async (req) => {
+  const BRAVE_API_KEY = Deno.env.get("BRAVE_SEARCH_API_KEY");
+  if (!BRAVE_API_KEY) {
+    return Response.json({ error: 'BRAVE_SEARCH_API_KEY secret is missing. Please set it in the platform secrets.' }, { status: 500 });
+  }
+
   const base44 = createClientFromRequest(req);
 
-  const { query, country = 'Norway', language = 'auto', category = '', max_candidates = 30 } = await req.json();
+  const { query, country = 'Norway', category = '', max_candidates = 30 } = await req.json();
 
   if (!query) {
     return Response.json({ error: 'query is required' }, { status: 400 });
   }
 
   const terms = getLocalTerms(country);
-
-  // Build search queries: mix English + local language + category-specific
+  const locale = getBraveLocale(country);
   const categorySlug = category || query;
-  const searchQueries = [
-    // English discovery
-    `sustainable ${categorySlug} brand small independent`,
-    `ethical ${categorySlug} brand Europe local`,
-    `${categorySlug} repair longevity independent brand`,
-    `${country} sustainable clothing brand small`,
-    `Nordic sustainable outdoor brand small independent`,
-    // Local language
-    ...terms.sustainability.slice(0, 3).map(t => `${t} ${categorySlug}`),
-    ...terms.production.slice(0, 2).map(t => `${t} ${categorySlug}`),
-    ...terms.material.slice(0, 2).map(t => `${t} ${categorySlug}`),
-    ...terms.repair.slice(0, 2).map(t => `${t}`),
-    ...terms.discovery.slice(0, 3).map(t => `${t}`),
+
+  // English queries use en locale, local-language queries use country locale
+  const englishLocale = { country: locale.country, search_lang: 'en', ui_lang: 'en-US' };
+
+  const searchPlan = [
+    // English discovery (with country locale for geo-targeting)
+    { q: `sustainable ${categorySlug} brand small independent`, locale: englishLocale },
+    { q: `ethical ${categorySlug} brand Europe local`, locale: englishLocale },
+    { q: `${categorySlug} repair longevity independent brand`, locale: englishLocale },
+    { q: `${country} sustainable clothing brand small`, locale: englishLocale },
+    { q: `Nordic sustainable outdoor brand small independent`, locale: englishLocale },
+    // Local language queries use country locale
+    ...terms.sustainability.slice(0, 3).map(t => ({ q: `${t} ${categorySlug}`, locale })),
+    ...terms.production.slice(0, 2).map(t => ({ q: `${t} ${categorySlug}`, locale })),
+    ...terms.material.slice(0, 2).map(t => ({ q: `${t} ${categorySlug}`, locale })),
+    ...terms.repair.slice(0, 2).map(t => ({ q: t, locale })),
+    ...terms.discovery.slice(0, 3).map(t => ({ q: t, locale })),
   ].slice(0, 20);
 
-  // Run Brave searches in parallel (max 10 concurrent)
-  const batchSize = 10;
+  // Run Brave searches
+  let totalFetched = 0;
+  let totalErrors = 0;
   const allResults = [];
-  for (let i = 0; i < searchQueries.length; i += batchSize) {
-    const batch = searchQueries.slice(i, i + batchSize);
-    const results = await Promise.all(batch.map(q => braveSearch(q, 8)));
-    results.forEach(r => allResults.push(...r));
+  const batchSize = 10;
+
+  for (let i = 0; i < searchPlan.length; i += batchSize) {
+    const batch = searchPlan.slice(i, i + batchSize);
+    const results = await Promise.allSettled(batch.map(({ q, locale: l }) => braveSearch(q, 8, l, BRAVE_API_KEY)));
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        totalFetched += r.value.length;
+        allResults.push(...r.value);
+      } else {
+        totalErrors++;
+      }
+    }
+  }
+
+  if (totalErrors > 0 && allResults.length === 0) {
+    return Response.json({ error: `All Brave Search queries failed (${totalErrors} errors). Check BRAVE_SEARCH_API_KEY and API quota.` }, { status: 500 });
   }
 
   // Extract unique brand domains
   const seen = new Set();
   const brandCandidates = [];
+  let excluded = 0;
 
   for (const result of allResults) {
     const domain = extractDomain(result.url);
-    if (!domain || isExcluded(domain) || seen.has(domain)) continue;
+    if (!domain || seen.has(domain)) continue;
     seen.add(domain);
+    if (isExcluded(domain)) { excluded++; continue; }
 
     const brandName = domainToBrandName(domain);
     brandCandidates.push({
@@ -203,6 +252,7 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
   const now = new Date().toISOString();
 
   // Save CandidateBrand records
+  let saved = 0;
   const saves = scored
     .filter(c => c.is_brand !== false)
     .map(async (c) => {
@@ -237,9 +287,9 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
       }
     });
 
-  await Promise.allSettled(saves);
+  const saveResults = await Promise.allSettled(saves);
+  saved = saveResults.filter(r => r.status === 'fulfilled').length;
 
-  // Group results for response
   const strong = scored.filter(c => c.is_brand !== false && (c.local_relevance_score || 0) >= 6 && (c.discovery_score || 0) >= 6);
   const possible = scored.filter(c => c.is_brand !== false && !strong.includes(c));
   const rejected = scored.filter(c => c.is_brand === false);
@@ -250,6 +300,10 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
     strong_local_candidates: strong,
     possible_small_brands: possible,
     rejected_count: rejected.length,
-    search_queries_used: searchQueries.length,
+    search_queries_used: searchPlan.length,
+    brave_results_fetched: totalFetched,
+    brave_results_excluded: excluded,
+    candidates_saved: saved,
+    brave_errors: totalErrors,
   });
 });

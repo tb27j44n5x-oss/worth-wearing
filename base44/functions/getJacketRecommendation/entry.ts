@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
   // ── 2. Load known brand insights + durability data + FAST-PATH CHECK ──────────────
   const roughCategoryKey = normalizedQuery;
 
-  const [knownInsights, durabilityAggregates, localCandidates] = await Promise.all([
+  const [knownInsights, durabilityAggregates, allCandidates] = await Promise.all([
     base44.entities.BrandCategoryInsight.filter({
       category_key: roughCategoryKey,
       is_current: true,
@@ -188,12 +188,42 @@ Deno.serve(async (req) => {
     base44.entities.DurabilityAggregate.filter({
       category_key: roughCategoryKey,
     }).catch(() => []),
-    // Load local candidate brands for this country
-    base44.entities.CandidateBrand.filter({
-      country: userCountry,
-      verification_status: ['new', 'crawled'],
-    }).catch(() => []),
+    // Load all recent candidates and filter in JS (avoid array filter issue)
+    base44.entities.CandidateBrand.list('-last_discovered_at', 200).catch(() => []),
   ]);
+
+  // Normalize country for matching (Norway/Norge/NO/Nordic etc.)
+  const NORWAY_ALIASES = ["norway", "norge", "no", "norwegian", "nordic", "nordics", "scandinavian"];
+  const SWEDEN_ALIASES  = ["sweden", "sverige", "se", "swedish"];
+  const DENMARK_ALIASES = ["denmark", "danmark", "dk", "danish"];
+  function normalizeCountryKey(c = "") {
+    const lc = c.toLowerCase().trim();
+    if (NORWAY_ALIASES.some(a => lc.includes(a))) return "norway";
+    if (SWEDEN_ALIASES.some(a => lc.includes(a))) return "sweden";
+    if (DENMARK_ALIASES.some(a => lc.includes(a))) return "denmark";
+    return lc;
+  }
+  const searchCountryKey = normalizeCountryKey(userCountry);
+
+  // Filter candidates by status and country in JS
+  const localCandidates = allCandidates.filter(c => {
+    const statusOk = c.verification_status === "new" || c.verification_status === "crawled";
+    if (!statusOk) return false;
+    const candidateCountryKey = normalizeCountryKey(c.country || "");
+    return candidateCountryKey === searchCountryKey || candidateCountryKey === "norway"; // include Nordic
+  });
+
+  // Better keyword relevance matching
+  const STOP_WORDS = new Set([
+    "sustainable","ethical","jacket","clothes","clothing","best","good",
+    "local","brand","fashion","wear","apparel","outdoor","the","a","an",
+    "for","and","or","in","of","with",
+  ]);
+  function tokenize(text) {
+    return (text || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
+      .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+  }
+  const queryTokens = tokenize(query);
 
   const freshInsights = knownInsights.filter(isBrandFresh);
   
@@ -256,9 +286,17 @@ Deno.serve(async (req) => {
   // Build local candidate context — force AI to include these
   let localCandidateContext = '';
   const relevantCandidates = localCandidates.filter(c => {
-    const tags = (c.category_tags || []).join(' ').toLowerCase();
-    const q = query.toLowerCase();
-    return tags.includes(q.split(' ')[0]) || c.created_from_query?.toLowerCase().includes(q.split(' ')[0]);
+    if (queryTokens.length === 0) return true;
+    const fields = [
+      ...(c.category_tags || []),
+      c.created_from_query || "",
+      c.name || "",
+      c.country || "",
+      ...(c.sustainability_claims_raw || []),
+      ...(c.materials_claims || []),
+      ...(c.production_location_claims || []),
+    ].join(" ").toLowerCase();
+    return queryTokens.some(t => fields.includes(t));
   }).slice(0, 10);
 
   if (relevantCandidates.length > 0) {

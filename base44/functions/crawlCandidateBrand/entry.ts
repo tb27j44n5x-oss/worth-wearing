@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
-
 // Pages to look for on brand websites
 const EVIDENCE_PATHS = [
   '', '/about', '/story', '/our-story', '/sustainability', '/impact',
@@ -11,43 +9,58 @@ const EVIDENCE_PATHS = [
   '/hallbarhet', '/tillverkning', '/reparation',
 ];
 
-async function tavilyExtract(url) {
+async function tavilyExtract(url, apiKey) {
   const res = await fetch('https://api.tavily.com/extract', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${TAVILY_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       urls: [url],
       include_raw_content: false,
     }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return { url, error: `Tavily returned ${res.status}` };
+  }
   const data = await res.json();
-  return data.results?.[0]?.content || null;
+  const content = data.results?.[0]?.content || null;
+  if (!content) return { url, error: 'Empty content returned' };
+  return { url, content };
 }
 
-async function tavilyCrawl(baseUrl, paths) {
-  // Try up to 6 pages via Tavily extract
+async function tavilyCrawl(baseUrl, paths, apiKey) {
   const urlsToTry = paths.slice(0, 6).map(p => {
     const base = baseUrl.replace(/\/$/, '');
     return p ? `${base}${p}` : base;
   });
 
-  const results = await Promise.allSettled(urlsToTry.map(u => tavilyExtract(u)));
+  const results = await Promise.allSettled(urlsToTry.map(u => tavilyExtract(u, apiKey)));
   const contents = [];
+  const failedPages = [];
 
-  for (let i = 0; i < results.length; i++) {
-    if (results[i].status === 'fulfilled' && results[i].value) {
-      contents.push({ url: urlsToTry[i], content: results[i].value.substring(0, 2000) });
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      if (r.value.content) {
+        contents.push({ url: r.value.url, content: r.value.content.substring(0, 2000) });
+      } else {
+        failedPages.push(`${r.value.url}: ${r.value.error}`);
+      }
+    } else {
+      failedPages.push(`Unknown URL: ${r.reason?.message || 'unknown error'}`);
     }
   }
 
-  return contents;
+  return { contents, failedPages };
 }
 
 Deno.serve(async (req) => {
+  const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
+  if (!TAVILY_API_KEY) {
+    return Response.json({ error: 'TAVILY_API_KEY secret is missing. Please set it in the platform secrets.' }, { status: 500 });
+  }
+
   const base44 = createClientFromRequest(req);
 
   const { candidate_brand_id } = await req.json();
@@ -75,15 +88,19 @@ Deno.serve(async (req) => {
   const baseUrl = candidate.website.startsWith('http') ? candidate.website : `https://${candidate.website}`;
 
   // Crawl key pages
-  const pages = await tavilyCrawl(baseUrl, EVIDENCE_PATHS);
+  const { contents: pages, failedPages } = await tavilyCrawl(baseUrl, EVIDENCE_PATHS, TAVILY_API_KEY);
 
   if (pages.length === 0) {
+    const failNote = failedPages.length > 0
+      ? `Crawl failed. Pages attempted:\n${failedPages.join('\n')}`
+      : 'Crawl returned no content — site may be blocked or unavailable.';
+
     await base44.asServiceRole.entities.CandidateBrand.update(candidate_brand_id, {
       verification_status: 'needs_review',
       last_crawled_at: new Date().toISOString(),
-      admin_notes: 'Crawl returned no content — site may be blocked or unavailable.',
+      admin_notes: failNote,
     });
-    return Response.json({ success: false, reason: 'No pages could be crawled' });
+    return Response.json({ success: false, reason: 'No pages could be crawled', failed_pages: failedPages });
   }
 
   const combinedContent = pages.map(p => `--- PAGE: ${p.url} ---\n${p.content}`).join('\n\n');
@@ -173,17 +190,20 @@ Also assess:
   );
   await Promise.allSettled(signalSaves);
 
-  // Determine new verification status
   const newStatus = signals.some(s => s.needs_manual_review) ? 'needs_review' : 'crawled';
 
-  // Update CandidateBrand
+  const adminNotes = [
+    extraction?.overall_transparency_notes || '',
+    failedPages.length > 0 ? `\n\nFailed pages:\n${failedPages.join('\n')}` : '',
+  ].join('').trim();
+
   await base44.asServiceRole.entities.CandidateBrand.update(candidate_brand_id, {
     verification_status: newStatus,
     last_crawled_at: now,
     production_location_claims: extraction?.production_countries || [],
     materials_claims: extraction?.materials_found || [],
     repair_or_longevity_claims: extraction?.repair_claims || [],
-    admin_notes: extraction?.overall_transparency_notes || '',
+    admin_notes: adminNotes,
   });
 
   return Response.json({
@@ -191,6 +211,7 @@ Also assess:
     brand_name: candidate.name,
     signals_extracted: signals.length,
     pages_crawled: pages.length,
+    failed_pages: failedPages,
     verification_status: newStatus,
     greenwashing_risk: extraction?.greenwashing_risk,
     has_repair_service: extraction?.has_repair_service,
