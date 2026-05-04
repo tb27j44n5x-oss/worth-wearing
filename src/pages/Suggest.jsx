@@ -24,7 +24,7 @@ const TYPES = [
 ];
 
 export default function Suggest() {
-  const [form, setForm] = useState({ correction_type: "new_brand", brand_name: "", note: "", submitted_source_url: "" });
+  const [form, setForm] = useState({ correction_type: "new_brand", brand_name: "", note: "", submitted_source_url: "", category: "" });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -51,6 +51,8 @@ export default function Suggest() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // Always create UserCorrection for admin queue
     await base44.entities.UserCorrection.create({
       correction_type: form.correction_type,
       brand_name: form.brand_name,
@@ -58,6 +60,39 @@ export default function Suggest() {
       submitted_source_url: form.submitted_source_url,
       status: "pending",
     });
+
+    // For new brand suggestions: also create BrandSuggestion + CandidateBrand pipeline
+    if (form.correction_type === "new_brand" && form.brand_name.trim()) {
+      // Create BrandSuggestion (connects to verifySuggestion)
+      const suggestion = await base44.entities.BrandSuggestion.create({
+        brand_name: form.brand_name.trim(),
+        brand_website: form.submitted_source_url || "",
+        category: form.category || "",
+        note: form.note,
+        submitted_by: user?.email || "anonymous",
+        ai_verification_status: "pending",
+      }).catch(() => null);
+
+      // Create CandidateBrand immediately so it shows up in Discover
+      await base44.entities.CandidateBrand.create({
+        name: form.brand_name.trim(),
+        website: form.submitted_source_url || "",
+        category_tags: form.category ? [form.category] : [],
+        discovery_source: "user_suggestion",
+        source_platform: "user_suggestion",
+        sustainability_claims_raw: form.note ? [form.note] : [],
+        confidence_level: "unknown",
+        verification_status: "new",
+        created_from_query: form.note,
+        last_discovered_at: new Date().toISOString(),
+      }).catch(() => null);
+
+      // Trigger AI verification if suggestion was created
+      if (suggestion?.id) {
+        base44.functions.invoke("verifySuggestion", { suggestion_id: suggestion.id }).catch(() => {});
+      }
+    }
+
     setSubmitted(true);
     setLoading(false);
   };
@@ -126,15 +161,31 @@ export default function Suggest() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-foreground block mb-2">Brand name (if relevant)</label>
+              <label className="text-sm font-medium text-foreground block mb-2">
+                Brand name {form.correction_type === "new_brand" && <span className="text-destructive">*</span>}
+              </label>
               <input
                 type="text"
+                required={form.correction_type === "new_brand"}
                 value={form.brand_name}
                 onChange={e => setForm({ ...form, brand_name: e.target.value })}
                 placeholder="e.g. Northern Playground"
                 className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
+
+            {form.correction_type === "new_brand" && (
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Product category (optional)</label>
+                <input
+                  type="text"
+                  value={form.category}
+                  onChange={e => setForm({ ...form, category: e.target.value })}
+                  placeholder="e.g. waterproof jacket, merino wool base layer"
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium text-foreground block mb-2">Your note or correction <span className="text-destructive">*</span></label>

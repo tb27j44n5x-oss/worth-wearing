@@ -1,0 +1,79 @@
+{
+  "name": "BrandSignal",
+  "type": "object",
+  "properties": {
+    "candidate_brand_id": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "signal_type": {
+      "type": "string",
+      "enum": [
+        "material",
+        "production_location",
+        "factory",
+        "repair",
+        "warranty",
+        "durability",
+        "circularity",
+        "worker_ethics",
+        "sustainability_claim",
+        "greenwashing_risk",
+        "stockist",
+        "founder_note",
+        "other"
+      ]
+    },
+    "claim_text": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "source_platform": {
+      "type": "string",
+      "enum": [
+        "brand_website",
+        "instagram",
+        "retailer",
+        "interview",
+        "certification",
+        "forum",
+        "customer_review",
+        "other"
+      ]
+    },
+    "evidence_strength": {
+      "type": "string",
+      "enum": [
+        "strong",
+        "medium",
+        "weak",
+        "unverified"
+      ],
+      "default": "unverified"
+    },
+    "is_brand_owned": {
+      "type": "boolean",
+      "default": true
+    },
+    "extracted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "needs_manual_review": {
+      "type": "boolean",
+      "default": false
+    },
+    "review_note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_brand_id",
+    "signal_type",
+    "claim_text"
+  ]
+}

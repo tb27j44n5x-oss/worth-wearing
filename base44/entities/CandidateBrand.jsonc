@@ -1,0 +1,135 @@
+{
+  "name": "CandidateBrand",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "instagram_handle": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "city_or_region": {
+      "type": "string"
+    },
+    "category_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "size_estimate": {
+      "type": "string",
+      "enum": [
+        "micro",
+        "small",
+        "medium",
+        "large",
+        "unknown"
+      ],
+      "default": "unknown"
+    },
+    "discovery_source": {
+      "type": "string",
+      "enum": [
+        "web_search",
+        "instagram",
+        "user_suggestion",
+        "retailer",
+        "directory",
+        "admin_seed",
+        "llm"
+      ]
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "source_platform": {
+      "type": "string",
+      "enum": [
+        "website",
+        "instagram",
+        "retailer",
+        "directory",
+        "user_suggestion",
+        "search_api",
+        "other"
+      ]
+    },
+    "sustainability_claims_raw": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "production_location_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "materials_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "repair_or_longevity_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence_level": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ],
+      "default": "unknown"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "crawled",
+        "needs_review",
+        "promoted",
+        "rejected"
+      ],
+      "default": "new"
+    },
+    "discovery_score": {
+      "type": "number",
+      "description": "0-10: how strong the discovery signal is"
+    },
+    "local_relevance_score": {
+      "type": "number",
+      "description": "0-10: how local/regional to the search country"
+    },
+    "created_from_query": {
+      "type": "string"
+    },
+    "last_discovered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_crawled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "admin_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

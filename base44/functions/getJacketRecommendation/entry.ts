@@ -2,13 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const BRAND_CACHE_TTL_DAYS = 90;
 
-// Normalize query for cache key with multi-variant matching
-function normalizeQuery(query) {
+// Normalize query for cache key — includes country, budget, preference for proper cache isolation
+function normalizeQuery(query, country = '', budget = '', preference = '') {
   const cleaned = query.toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .trim();
   
-  // Map variants to canonical form
   const variants = {
     'waterproof': ['waterproof', 'rain', 'wet weather'],
     'jacket': ['jacket', 'coat', 'parka'],
@@ -27,13 +26,20 @@ function normalizeQuery(query) {
     }
   }
   
-  return canonical
+  const queryPart = canonical
     .replace(/\b(a|an|the|for|and|or|with|in|of|best|good|cheap|quality|mens|womens|unisex)\b/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
     .sort()
     .join('_');
+
+  // Include country, budget, preference in cache key so Norwegian/premium/secondhand gets its own slot
+  const countryPart = country.toLowerCase().replace(/\s/g, '') || 'unknown';
+  const budgetPart = budget || 'mid';
+  const prefPart = preference || 'either';
+
+  return `${queryPart}__${countryPart}__${budgetPart}__${prefPart}`;
 }
 
 // Check if a brand insight is still fresh (within TTL)
@@ -143,7 +149,7 @@ Deno.serve(async (req) => {
   }
 
   const userCountry = country || 'Norway';
-  const normalizedQuery = normalizeQuery(query);
+  const normalizedQuery = normalizeQuery(query, userCountry, budget, preference);
 
   // ── 1. Check full-result cache ───────────────────────────────────────────────
   const existing = await base44.asServiceRole.entities.RecommendationSet.filter({ normalized_query: normalizedQuery });
@@ -174,14 +180,19 @@ Deno.serve(async (req) => {
   // ── 2. Load known brand insights + durability data + FAST-PATH CHECK ──────────────
   const roughCategoryKey = normalizedQuery;
 
-  const [knownInsights, durabilityAggregates] = await Promise.all([
+  const [knownInsights, durabilityAggregates, localCandidates] = await Promise.all([
     base44.entities.BrandCategoryInsight.filter({
       category_key: roughCategoryKey,
       is_current: true,
     }).catch(() => []),
     base44.entities.DurabilityAggregate.filter({
       category_key: roughCategoryKey,
-    }).catch(() => [])
+    }).catch(() => []),
+    // Load local candidate brands for this country
+    base44.entities.CandidateBrand.filter({
+      country: userCountry,
+      verification_status: ['new', 'crawled'],
+    }).catch(() => []),
   ]);
 
   const freshInsights = knownInsights.filter(isBrandFresh);
@@ -242,6 +253,22 @@ Deno.serve(async (req) => {
     knownBrandsContext = `CACHED BRANDS (reuse scores as-is): ${lines.join(' | ')}`;
   }
 
+  // Build local candidate context — force AI to include these
+  let localCandidateContext = '';
+  const relevantCandidates = localCandidates.filter(c => {
+    const tags = (c.category_tags || []).join(' ').toLowerCase();
+    const q = query.toLowerCase();
+    return tags.includes(q.split(' ')[0]) || c.created_from_query?.toLowerCase().includes(q.split(' ')[0]);
+  }).slice(0, 10);
+
+  if (relevantCandidates.length > 0) {
+    const lines = relevantCandidates.map(c => {
+      const signals = (c.sustainability_claims_raw || []).slice(0, 2).join('; ');
+      return `${c.name} (${c.website || 'no website'}) — ${c.city_or_region || c.country} — signals: ${signals || 'none yet'} — confidence: ${c.confidence_level}`;
+    });
+    localCandidateContext = `\nLOCAL CANDIDATES FOR ${userCountry} (you MUST include at least 2 of these if evidence supports it, even at low/medium confidence):\n${lines.join('\n')}`;
+  }
+
   // ── 3. Build compact prompt (system instructions externalized) ───────────────
   const budgetNote = budget === 'low' ? 'Under €150' : budget === 'premium' ? '€300+' : '€100–300';
   const preferenceNote = preference === 'secondhand' ? 'Second-hand' : preference === 'new' ? 'New only' : 'Either';
@@ -249,13 +276,21 @@ Deno.serve(async (req) => {
   const prompt = `SEARCH: "${query}" | LOCATION: ${userCountry} | PREFERENCE: ${preferenceNote} | BUDGET: ${budgetNote}
 
 ${knownBrandsContext}
+${localCandidateContext}
 
-RESEARCH: 8-10 brands (mix known + small independent). For each: material/durability/supply chain/repair/second-hand/worker ethics.
+DIVERSITY RULES (mandatory):
+- Max 3 large/global brands (Patagonia, Arc'teryx, TNF, Columbia etc.)
+- Minimum 4 small/independent brands
+- Minimum 2 local/regional brands from ${userCountry} or Nordic/European region
+- If not enough local brands found: note it explicitly in local_discovery.message
+
+RESEARCH: 12-15 brands total (mix known + small independent + local candidates above). For each: material/durability/supply chain/repair/second-hand/worker ethics.
 Include: product URLs, Reddit sentiment (r/BuyItForLife, relevant subreddits), small brand website analysis.
 Score small brands on honesty/specificity, not certifications. Flag greenwashing, vague claims, missing factory info.
 Transport CO2: calculate distance ${userCountry} → manufacturing location.
 
 TONE: Honest researcher. Cite evidence type. Flag unknowns. Be skeptical: "Based on available evidence", "Limited data", "Unverified claim".
+Small brands CAN appear at low/medium confidence — clearly label what is known vs unknown.
 
 LIFECYCLE (all brands): RAW MATERIAL (fiber/certs/footprint) → MANUFACTURING (location/energy/worker wages) → TRANSPORT (distance/mode/CO2) → USE/DURABILITY (lifespan/repair) → END-OF-LIFE (recyclable/take-back).
 
@@ -356,6 +391,27 @@ SMALL BRANDS: Reward honesty about limitations. "we can't afford Bluesign yet" >
           main_known_evidence: { type: 'string' }, main_unknown: { type: 'string' },
           evidence_confidence: { type: 'string' }, recommended_buying_route: { type: 'string' },
           product_url: { type: 'string' }, website: { type: 'string' }
+        }
+      },
+      local_discovery: {
+        type: 'object',
+        properties: {
+          found_local_brands: { type: 'boolean' },
+          local_brand_count: { type: 'number' },
+          message: { type: 'string', description: 'e.g. "Found 2 Nordic brands" or "Not enough local evidence yet — suggest a brand"' },
+          local_brands: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                brand_name: { type: 'string' },
+                country: { type: 'string' },
+                verdict: { type: 'string' },
+                evidence_confidence: { type: 'string' },
+                website: { type: 'string' },
+              }
+            }
+          }
         }
       }
     }
