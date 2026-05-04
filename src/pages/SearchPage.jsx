@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSearch } from "@/hooks/useSearch";
 
-const ROTATING_WORDS = ["jackets", "jeans", "dresses", "t-shirts", "sweaters", "shoes", "wetsuits", "cloths"];
+const ROTATING_WORDS = ["jackets", "jeans", "dresses", "t-shirts", "sweaters", "shoes", "wetsuits", "cloths", "a brand"];
 
 const EXAMPLES = [
   "sustainable cotton jeans",
