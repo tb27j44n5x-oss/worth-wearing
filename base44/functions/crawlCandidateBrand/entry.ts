@@ -1,21 +1,26 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Pages to try on brand websites, ordered by evidence priority
-const EVIDENCE_PATHS = [
-  // Tier 1: homepage + about (always try)
-  '', '/about', '/our-story', '/story', '/om-oss', '/om-os',
-  // Tier 2: sustainability + impact
-  '/sustainability', '/impact', '/baerekraft', '/barekraft',
-  '/bærekraft', '/hallbarhet', '/hållbarhet', '/baeredygtighed', '/bæredygtighed',
-  // Tier 3: materials
-  '/materials', '/materialer', '/material',
-  // Tier 4: production + factory
-  '/production', '/produksjon', '/produktion', '/tillverkning', '/factory',
-  // Tier 5: repair + warranty + care
-  '/repair', '/reparasjon', '/reparation', '/care', '/warranty', '/garanti', '/vedlikehold',
-  // Tier 6: journal + blog + stockists (lower priority)
-  '/journal', '/blog', '/stockists',
-];
+// Balanced evidence path selection — pick from each category so all evidence types are covered.
+// We attempt all of these (~27 paths) rather than slicing the first N.
+const EVIDENCE_PATH_GROUPS = {
+  about:          ['', '/about', '/our-story', '/story', '/om-oss', '/om-os'],
+  sustainability: ['/sustainability', '/impact', '/baerekraft', '/bærekraft', '/hållbarhet', '/bæredygtighed'],
+  materials:      ['/materials', '/materialer', '/material'],
+  production:     ['/production', '/produksjon', '/produktion', '/tillverkning', '/factory'],
+  repair:         ['/repair', '/reparasjon', '/reparation', '/care', '/warranty', '/garanti', '/vedlikehold'],
+};
+
+// Build balanced path list: all paths from every group, deduplicated
+function buildEvidencePaths() {
+  const paths = [];
+  const seen = new Set();
+  for (const group of Object.values(EVIDENCE_PATH_GROUPS)) {
+    for (const p of group) {
+      if (!seen.has(p)) { seen.add(p); paths.push(p); }
+    }
+  }
+  return paths; // ~27 paths, all evidence categories guaranteed
+}
 
 async function tavilyExtract(url, apiKey) {
   const res = await fetch('https://api.tavily.com/extract', {
@@ -39,7 +44,7 @@ async function tavilyExtract(url, apiKey) {
 }
 
 async function tavilyCrawl(baseUrl, paths, apiKey) {
-  const urlsToTry = paths.slice(0, 16).map(p => {
+  const urlsToTry = paths.map(p => {
     const base = baseUrl.replace(/\/$/, '');
     return p ? `${base}${p}` : base;
   });
@@ -95,8 +100,8 @@ Deno.serve(async (req) => {
 
   const baseUrl = candidate.website.startsWith('http') ? candidate.website : `https://${candidate.website}`;
 
-  // Crawl key pages
-  const { contents: pages, failedPages } = await tavilyCrawl(baseUrl, EVIDENCE_PATHS, TAVILY_API_KEY);
+  // Crawl key pages — balanced selection across all evidence categories
+  const { contents: pages, failedPages } = await tavilyCrawl(baseUrl, buildEvidencePaths(), TAVILY_API_KEY);
 
   if (pages.length === 0) {
     const failNote = failedPages.length > 0
@@ -200,9 +205,19 @@ Also assess:
 
   const newStatus = signals.some(s => s.needs_manual_review) ? 'needs_review' : 'crawled';
 
+  // Build per-category coverage summary for admin_notes
+  const crawledUrls = new Set(pages.map(p => {
+    try { return new URL(p.url).pathname; } catch { return p.url; }
+  }));
+  const coverageSummary = Object.entries(EVIDENCE_PATH_GROUPS).map(([group, groupPaths]) => {
+    const covered = groupPaths.filter(p => crawledUrls.has(p) || crawledUrls.has(p + '/'));
+    return `${group}: ${covered.length}/${groupPaths.length} pages reached`;
+  }).join('\n');
+
   const adminNotes = [
     extraction?.overall_transparency_notes || '',
-    failedPages.length > 0 ? `\n\nFailed pages:\n${failedPages.join('\n')}` : '',
+    `\n\nEvidence coverage:\n${coverageSummary}`,
+    failedPages.length > 0 ? `\n\nFailed pages (${failedPages.length}):\n${failedPages.slice(0, 20).join('\n')}` : '',
   ].join('').trim();
 
   await base44.asServiceRole.entities.CandidateBrand.update(candidate_brand_id, {

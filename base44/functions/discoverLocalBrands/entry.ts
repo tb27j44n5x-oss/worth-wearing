@@ -23,6 +23,14 @@ const LOCAL_TERMS = {
     repair: ["reparation tøj", "tøjreparation", "livstidsgaranti tøj"],
     discovery: ["tøjmærke København", "udendørsbeklædning uld Danmark"],
   },
+  // Nordic/Scandinavian: balanced mix, not country-specific
+  nordic: {
+    sustainability: ["sustainable Nordic brand", "slow fashion Scandinavia", "ethical outdoor brand Nordics"],
+    production: ["produced in Scandinavia", "made in Europe small brand", "Nordic knitwear brand"],
+    material: ["merino wool Nordic", "recycled materials outdoor", "organic cotton Scandinavia"],
+    repair: ["repair warranty outdoor Nordic", "livstidsgaranti klær", "livstidsgaranti kläder"],
+    discovery: ["small outdoor brand Norway Sweden Denmark", "sustainable fashion Nordics", "independent brand Scandinavia"],
+  },
 };
 
 // Locale params per country for Brave Search API
@@ -30,14 +38,21 @@ const BRAVE_LOCALE = {
   norway:  { country: 'NO', search_lang: 'no', ui_lang: 'nb-NO' },
   sweden:  { country: 'SE', search_lang: 'sv', ui_lang: 'sv-SE' },
   denmark: { country: 'DK', search_lang: 'da', ui_lang: 'da-DK' },
+  nordic:  { country: 'NO', search_lang: 'en', ui_lang: 'en-US' },
   default: { country: 'US', search_lang: 'en', ui_lang: 'en-US' },
 };
 
+// Token-based country normalization (no substring matching for short codes)
 function getCountryKey(country) {
-  const key = country.toLowerCase().replace(/\s/g, '');
-  if (key.includes('norw') || key === 'norway' || key === 'no' || key.includes('norsk') || key.includes('nordic')) return 'norway';
-  if (key.includes('swed') || key === 'sweden' || key === 'se') return 'sweden';
-  if (key.includes('denm') || key === 'denmark' || key === 'dk') return 'denmark';
+  const tokens = country.toLowerCase().trim().split(/[\s,_-]+/);
+  const NORWAY_TOKENS  = new Set(["norway", "norge", "norwegian", "norsk", "no"]);
+  const SWEDEN_TOKENS  = new Set(["sweden", "sverige", "swedish", "svensk", "se"]);
+  const DENMARK_TOKENS = new Set(["denmark", "danmark", "danish", "dansk", "dk"]);
+  const NORDIC_TOKENS  = new Set(["nordic", "nordics", "scandinavia", "scandinavian"]);
+  if (tokens.some(t => NORWAY_TOKENS.has(t))) return 'norway';
+  if (tokens.some(t => SWEDEN_TOKENS.has(t))) return 'sweden';
+  if (tokens.some(t => DENMARK_TOKENS.has(t))) return 'denmark';
+  if (tokens.some(t => NORDIC_TOKENS.has(t))) return 'nordic';
   return null;
 }
 
@@ -48,7 +63,7 @@ function getLocalTerms(country) {
 
 function getBraveLocale(country) {
   const key = getCountryKey(country);
-  return key ? BRAVE_LOCALE[key] : BRAVE_LOCALE.default;
+  return (key && BRAVE_LOCALE[key]) ? BRAVE_LOCALE[key] : BRAVE_LOCALE.default;
 }
 
 // Brave Search API call with locale params
@@ -251,12 +266,27 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
     return Response.json({ error: 'LLM classification failed', detail: err.message }, { status: 500 });
   }
 
-  const scored = classified?.candidates || [];
+  const CONFIDENCE_RANK = { high: 3, medium: 2, low: 1, unknown: 0 };
+  const allScored = classified?.candidates || [];
+
+  // Sort by local_relevance_score → discovery_score → confidence_level, then limit to max_candidates
+  const toSave = allScored
+    .filter(c => c.is_brand !== false)
+    .sort((a, b) => {
+      const localDiff = (b.local_relevance_score || 0) - (a.local_relevance_score || 0);
+      if (localDiff !== 0) return localDiff;
+      const discDiff = (b.discovery_score || 0) - (a.discovery_score || 0);
+      if (discDiff !== 0) return discDiff;
+      return (CONFIDENCE_RANK[b.confidence_level] || 0) - (CONFIDENCE_RANK[a.confidence_level] || 0);
+    })
+    .slice(0, max_candidates);
+
+  const scored = allScored; // keep for response stats
   const now = new Date().toISOString();
 
-  // Save CandidateBrand records
+  // Save CandidateBrand records (only best max_candidates)
   let saved = 0;
-  const saves = scored
+  const saves = toSave
     .filter(c => c.is_brand !== false)
     .map(async (c) => {
       const existing = await base44.asServiceRole.entities.CandidateBrand.filter({
