@@ -123,13 +123,13 @@ export default function RecommendationBlock({ block, label, highlight, icon, ful
         )}
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
           {block.product_url && (
-            <a href={block.product_url} target="_blank" rel="noopener noreferrer"
+            <a href={block.product_url.startsWith('http') ? block.product_url : `https://${block.product_url}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-medium text-primary hover:underline whitespace-nowrap">
               Shop <ExternalLink size={10} />
             </a>
           )}
           {block.website && (
-            <a href={block.website} target="_blank" rel="noopener noreferrer"
+            <a href={block.website.startsWith('http') ? block.website : `https://${block.website}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
               Website <ExternalLink size={10} />
             </a>

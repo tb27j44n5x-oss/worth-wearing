@@ -74,7 +74,10 @@ export default function CircularEconomyFilter({ isActive, onToggle, brandsWithCi
 
                 {brand.website && (
                   <button
-                    onClick={() => window.open(`${brand.website}?repair=true`, '_blank')}
+                    onClick={() => {
+                      const url = brand.website.startsWith('http') ? brand.website : `https://${brand.website}`;
+                      window.open(url, '_blank');
+                    }}
                     className="text-xs text-primary hover:underline font-medium mt-2 inline-block"
                   >
                     Learn how to use repair services →
