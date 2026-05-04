@@ -1,12 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Pages to look for on brand websites
+// Pages to try on brand websites, ordered by evidence priority
 const EVIDENCE_PATHS = [
-  '', '/about', '/story', '/our-story', '/sustainability', '/impact',
-  '/materials', '/production', '/factory', '/repair', '/care',
-  '/warranty', '/stockists', '/journal', '/blog', '/om-oss',
-  '/barekraft', '/baerekraft', '/produksjon', '/reparasjon',
-  '/hallbarhet', '/tillverkning', '/reparation',
+  // Tier 1: homepage + about (always try)
+  '', '/about', '/our-story', '/story', '/om-oss', '/om-os',
+  // Tier 2: sustainability + impact
+  '/sustainability', '/impact', '/baerekraft', '/barekraft',
+  '/bærekraft', '/hallbarhet', '/hållbarhet', '/baeredygtighed', '/bæredygtighed',
+  // Tier 3: materials
+  '/materials', '/materialer', '/material',
+  // Tier 4: production + factory
+  '/production', '/produksjon', '/produktion', '/tillverkning', '/factory',
+  // Tier 5: repair + warranty + care
+  '/repair', '/reparasjon', '/reparation', '/care', '/warranty', '/garanti', '/vedlikehold',
+  // Tier 6: journal + blog + stockists (lower priority)
+  '/journal', '/blog', '/stockists',
 ];
 
 async function tavilyExtract(url, apiKey) {
@@ -31,7 +39,7 @@ async function tavilyExtract(url, apiKey) {
 }
 
 async function tavilyCrawl(baseUrl, paths, apiKey) {
-  const urlsToTry = paths.slice(0, 6).map(p => {
+  const urlsToTry = paths.slice(0, 16).map(p => {
     const base = baseUrl.replace(/\/$/, '');
     return p ? `${base}${p}` : base;
   });

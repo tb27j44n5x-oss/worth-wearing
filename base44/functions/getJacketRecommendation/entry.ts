@@ -192,38 +192,82 @@ Deno.serve(async (req) => {
     base44.entities.CandidateBrand.list('-last_discovered_at', 200).catch(() => []),
   ]);
 
-  // Normalize country for matching (Norway/Norge/NO/Nordic etc.)
-  const NORWAY_ALIASES = ["norway", "norge", "no", "norwegian", "nordic", "nordics", "scandinavian"];
-  const SWEDEN_ALIASES  = ["sweden", "sverige", "se", "swedish"];
-  const DENMARK_ALIASES = ["denmark", "danmark", "dk", "danish"];
+  // ── Country normalization (token/exact matching — no substring to avoid "no" in "unknown") ──
   function normalizeCountryKey(c = "") {
     const lc = c.toLowerCase().trim();
-    if (NORWAY_ALIASES.some(a => lc.includes(a))) return "norway";
-    if (SWEDEN_ALIASES.some(a => lc.includes(a))) return "sweden";
-    if (DENMARK_ALIASES.some(a => lc.includes(a))) return "denmark";
-    return lc;
+    // Exact tokens only — split on spaces and check each token
+    const tokens = lc.split(/[\s,_-]+/);
+    const NORWAY_TOKENS  = new Set(["norway", "norge", "norwegian", "norsk", "no"]);
+    const SWEDEN_TOKENS  = new Set(["sweden", "sverige", "swedish", "svensk", "se"]);
+    const DENMARK_TOKENS = new Set(["denmark", "danmark", "danish", "dansk", "dk"]);
+    const NORDIC_TOKENS  = new Set(["nordic", "nordics", "scandinavia", "scandinavian"]);
+    if (tokens.some(t => NORWAY_TOKENS.has(t))) return "norway";
+    if (tokens.some(t => SWEDEN_TOKENS.has(t))) return "sweden";
+    if (tokens.some(t => DENMARK_TOKENS.has(t))) return "denmark";
+    if (tokens.some(t => NORDIC_TOKENS.has(t))) return "nordic";
+    return "unknown";
   }
   const searchCountryKey = normalizeCountryKey(userCountry);
+  // Scandinavian countries that are "local" to each other
+  const SCANDI_KEYS = new Set(["norway", "sweden", "denmark", "nordic"]);
 
   // Filter candidates by status and country in JS
   const localCandidates = allCandidates.filter(c => {
     const statusOk = c.verification_status === "new" || c.verification_status === "crawled";
     if (!statusOk) return false;
-    const candidateCountryKey = normalizeCountryKey(c.country || "");
-    return candidateCountryKey === searchCountryKey || candidateCountryKey === "norway"; // include Nordic
+    const candidateKey = normalizeCountryKey(c.country || "");
+    // Exact match
+    if (candidateKey === searchCountryKey) return true;
+    // Nordic/Scandinavian candidate included for any Scandi search
+    if (candidateKey === "nordic" && SCANDI_KEYS.has(searchCountryKey)) return true;
+    // Unknown country: include only if local_relevance_score >= 7
+    if (candidateKey === "unknown") return (c.local_relevance_score || 0) >= 7;
+    return false;
   });
 
-  // Better keyword relevance matching
+  // ── Synonym expansion for query tokens ──────────────────────────────────────
   const STOP_WORDS = new Set([
     "sustainable","ethical","jacket","clothes","clothing","best","good",
     "local","brand","fashion","wear","apparel","outdoor","the","a","an",
     "for","and","or","in","of","with",
   ]);
+  const SYNONYM_MAP = {
+    puffer:    ["outerwear", "jacket", "insulation", "down"],
+    down:      ["outerwear", "jacket", "insulation", "puffer"],
+    insulated: ["outerwear", "jacket", "insulation"],
+    dunjakke:  ["outerwear", "jacket", "insulation"],
+    boblejakke:["outerwear", "jacket", "insulation"],
+    rain:      ["outerwear", "waterproof", "shell"],
+    shell:     ["outerwear", "waterproof", "rain"],
+    waterproof:["outerwear", "shell", "rain"],
+    regnjakke: ["outerwear", "waterproof", "shell"],
+    skalljakke:["outerwear", "waterproof", "shell"],
+    wool:      ["wool", "merino", "layering"],
+    merino:    ["wool", "merino", "layering"],
+    ull:       ["wool", "merino", "layering"],
+    baselayer: ["wool", "merino", "layering"],
+    sweater:   ["knitwear", "wool"],
+    jumper:    ["knitwear", "wool"],
+    knit:      ["knitwear", "wool"],
+    genser:    ["knitwear", "wool"],
+    hiking:    ["outdoor", "trekking"],
+    trekking:  ["outdoor", "hiking"],
+    turklær:   ["outdoor", "hiking"],
+    friluft:   ["outdoor", "hiking"],
+  };
   function tokenize(text) {
-    return (text || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
+    return (text || "").toLowerCase().replace(/[^a-z0-9æøåäöü\s]/g, " ").split(/\s+/)
       .filter(w => w.length > 2 && !STOP_WORDS.has(w));
   }
-  const queryTokens = tokenize(query);
+  function expandTokens(tokens) {
+    const expanded = new Set(tokens);
+    for (const t of tokens) {
+      const syns = SYNONYM_MAP[t] || [];
+      for (const s of syns) expanded.add(s);
+    }
+    return [...expanded];
+  }
+  const queryTokens = expandTokens(tokenize(query));
 
   const freshInsights = knownInsights.filter(isBrandFresh);
   

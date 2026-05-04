@@ -168,10 +168,12 @@ Deno.serve(async (req) => {
     return Response.json({ error: `All Brave Search queries failed (${totalErrors} errors). Check BRAVE_SEARCH_API_KEY and API quota.` }, { status: 500 });
   }
 
-  // Extract unique brand domains
+  // Extract unique brand domains — collect up to 80 raw candidates before LLM classification
+  // (do NOT stop at max_candidates here — early Brave results may be retailers/articles)
   const seen = new Set();
   const brandCandidates = [];
   let excluded = 0;
+  const sourceUrls = {}; // domain → original Brave result URL
 
   for (const result of allResults) {
     const domain = extractDomain(result.url);
@@ -180,6 +182,7 @@ Deno.serve(async (req) => {
     if (isExcluded(domain)) { excluded++; continue; }
 
     const brandName = domainToBrandName(domain);
+    sourceUrls[domain] = result.url;
     brandCandidates.push({
       domain,
       url: result.url,
@@ -188,7 +191,7 @@ Deno.serve(async (req) => {
       brandName,
     });
 
-    if (brandCandidates.length >= max_candidates) break;
+    if (brandCandidates.length >= 80) break;
   }
 
   // Use LLM to score and classify candidates
@@ -260,9 +263,14 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
         website: c.website
       }).catch(() => []);
 
+      // Find the original Brave URL for this brand's domain
+      const domain = extractDomain(c.website || '');
+      const originalUrl = (domain && sourceUrls[domain]) ? sourceUrls[domain] : (c.website || '');
+
       const payload = {
         name: c.brand_name,
         website: c.website,
+        source_url: originalUrl,
         country: c.country_guess || country,
         category_tags: [category || query],
         size_estimate: c.size_estimate || 'unknown',

@@ -17,17 +17,18 @@ const STOP_WORDS = new Set([
   "the", "a", "an", "for", "and", "or", "in", "of", "with",
 ]);
 
-// Normalize country name for matching
-const NORWAY_ALIASES = ["norway", "norge", "no", "norwegian", "nordic", "nordics", "scandinavian", "scandinavia"];
-const SWEDEN_ALIASES  = ["sweden", "sverige", "se", "swedish"];
-const DENMARK_ALIASES = ["denmark", "danmark", "dk", "danish"];
-
+// Normalize country name — token-based only to avoid "no" matching "unknown"
 function normalizeCountry(c = "") {
-  const lc = c.toLowerCase().trim();
-  if (NORWAY_ALIASES.some(a => lc.includes(a))) return "norway";
-  if (SWEDEN_ALIASES.some(a => lc.includes(a))) return "sweden";
-  if (DENMARK_ALIASES.some(a => lc.includes(a))) return "denmark";
-  return lc;
+  const tokens = c.toLowerCase().trim().split(/[\s,_-]+/);
+  const NORWAY_TOKENS  = new Set(["norway", "norge", "norwegian", "norsk", "no"]);
+  const SWEDEN_TOKENS  = new Set(["sweden", "sverige", "swedish", "svensk", "se"]);
+  const DENMARK_TOKENS = new Set(["denmark", "danmark", "danish", "dansk", "dk"]);
+  const NORDIC_TOKENS  = new Set(["nordic", "nordics", "scandinavia", "scandinavian"]);
+  if (tokens.some(t => NORWAY_TOKENS.has(t))) return "norway";
+  if (tokens.some(t => SWEDEN_TOKENS.has(t))) return "sweden";
+  if (tokens.some(t => DENMARK_TOKENS.has(t))) return "denmark";
+  if (tokens.some(t => NORDIC_TOKENS.has(t))) return "nordic";
+  return "unknown";
 }
 
 // Tokenize a string into meaningful keywords
