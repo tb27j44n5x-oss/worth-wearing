@@ -10,5 +10,6 @@ export const base44 = createClient({
   functionsVersion,
   serverUrl: '',
   requiresAuth: false,
-  appBaseUrl
+  appBaseUrl,
+  timeout: 120000, // 2 minutes — LLM research calls can take 30-60s
 });

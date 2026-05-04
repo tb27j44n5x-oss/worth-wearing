@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
  */
 export function useFetchData(fetchFn, dependencies = []) {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(dependencies.length > 0);
   const [error, setError] = useState(null);
 
   const refetch = async () => {

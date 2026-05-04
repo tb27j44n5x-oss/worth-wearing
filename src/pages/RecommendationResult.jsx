@@ -61,8 +61,10 @@ export default function RecommendationResult() {
     
     const interval = setInterval(() => {
       setProgress(prev => {
-        if (prev >= 90) return 90;
-        return prev + Math.random() * 25;
+        if (prev >= 98) return 98;
+        // Slow down as we approach the cap so it never looks stuck
+        const increment = prev < 60 ? Math.random() * 20 : prev < 85 ? Math.random() * 6 : Math.random() * 1.5;
+        return Math.min(prev + increment, 98);
       });
     }, 800);
 
