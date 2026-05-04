@@ -98,7 +98,7 @@ export default function RecommendationResult() {
             <div className="space-y-3">
               <p className="font-syne text-2xl font-semibold text-foreground">Researching brands…</p>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Analyzing durability, worker ethics, transparency, and supply chains. This typically takes <strong>15-40 seconds</strong>.
+                Analyzing durability, worker ethics, transparency, and supply chains. This can take <strong>up to 2 minutes</strong> — please keep this tab open.
               </p>
             </div>
 
