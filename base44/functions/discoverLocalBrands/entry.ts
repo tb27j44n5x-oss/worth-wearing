@@ -101,6 +101,18 @@ function extractDomain(url) {
   }
 }
 
+// Normalize domain for deduplication — strips protocol, www, trailing slash, paths
+function normalizeDomain(url) {
+  if (!url) return null;
+  try {
+    const withProto = url.startsWith('http') ? url : `https://${url}`;
+    const u = new URL(withProto);
+    return u.hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 // Filter out non-brand domains
 const EXCLUDED_DOMAINS = [
   'amazon', 'ebay', 'zalando', 'asos', 'hm.com', 'zara', 'uniqlo',
@@ -289,9 +301,19 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
   const saves = toSave
     .filter(c => c.is_brand !== false)
     .map(async (c) => {
-      const existing = await base44.asServiceRole.entities.CandidateBrand.filter({
-        website: c.website
-      }).catch(() => []);
+      // Deduplicate by normalized_domain first, fall back to website match
+      const normalizedDomainCheck = normalizeDomain(c.website || '');
+      let existing = [];
+      if (normalizedDomainCheck) {
+        existing = await base44.asServiceRole.entities.CandidateBrand.filter({
+          normalized_domain: normalizedDomainCheck
+        }).catch(() => []);
+      }
+      if (existing.length === 0) {
+        existing = await base44.asServiceRole.entities.CandidateBrand.filter({
+          website: c.website
+        }).catch(() => []);
+      }
 
       // Find the original Brave URL for this brand's domain
       const domain = extractDomain(c.website || '');
@@ -315,13 +337,19 @@ Exclude obvious retailers, magazines, affiliate sites, and global mega-brands.`,
         last_discovered_at: now,
       };
 
+      const normalizedDomain = normalizeDomain(c.website || '');
+
       if (existing.length > 0) {
         return base44.asServiceRole.entities.CandidateBrand.update(existing[0].id, {
           ...payload,
+          normalized_domain: normalizedDomain,
           last_discovered_at: now,
         });
       } else {
-        return base44.asServiceRole.entities.CandidateBrand.create(payload);
+        return base44.asServiceRole.entities.CandidateBrand.create({
+          ...payload,
+          normalized_domain: normalizedDomain,
+        });
       }
     });
 

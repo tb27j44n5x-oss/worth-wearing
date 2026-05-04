@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import NavBar from "@/components/NavBar";
-import { RefreshCw, Globe, Users, Star } from "lucide-react";
+import { RefreshCw, Globe, Users, Star, Search, ChevronRight, XCircle, CheckCircle } from "lucide-react";
+import CandidateDetailPanel from "@/components/discover/CandidateDetailPanel";
 
 const TABS = [
   { key: "published",  label: "Published" },
@@ -9,51 +10,6 @@ const TABS = [
   { key: "review",     label: "Needs Review" },
   { key: "community",  label: "Community" },
 ];
-
-// Generic words to ignore when matching candidates to query
-const STOP_WORDS = new Set([
-  "sustainable", "ethical", "jacket", "clothes", "clothing", "best",
-  "good", "local", "brand", "fashion", "wear", "apparel", "outdoor",
-  "the", "a", "an", "for", "and", "or", "in", "of", "with",
-]);
-
-// Normalize country name — token-based only to avoid "no" matching "unknown"
-function normalizeCountry(c = "") {
-  const tokens = c.toLowerCase().trim().split(/[\s,_-]+/);
-  const NORWAY_TOKENS  = new Set(["norway", "norge", "norwegian", "norsk", "no"]);
-  const SWEDEN_TOKENS  = new Set(["sweden", "sverige", "swedish", "svensk", "se"]);
-  const DENMARK_TOKENS = new Set(["denmark", "danmark", "danish", "dansk", "dk"]);
-  const NORDIC_TOKENS  = new Set(["nordic", "nordics", "scandinavia", "scandinavian"]);
-  if (tokens.some(t => NORWAY_TOKENS.has(t))) return "norway";
-  if (tokens.some(t => SWEDEN_TOKENS.has(t))) return "sweden";
-  if (tokens.some(t => DENMARK_TOKENS.has(t))) return "denmark";
-  if (tokens.some(t => NORDIC_TOKENS.has(t))) return "nordic";
-  return "unknown";
-}
-
-// Tokenize a string into meaningful keywords
-function tokenize(text = "") {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9æøåäöü\s]/g, " ")
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
-}
-
-// Check if a candidate is relevant to a query
-function isRelevant(candidate, queryTokens) {
-  if (queryTokens.length === 0) return true;
-  const fields = [
-    ...(candidate.category_tags || []),
-    candidate.created_from_query || "",
-    candidate.name || "",
-    candidate.country || "",
-    ...(candidate.sustainability_claims_raw || []),
-    ...(candidate.materials_claims || []),
-    ...(candidate.production_location_claims || []),
-  ].join(" ").toLowerCase();
-  return queryTokens.some(t => fields.includes(t));
-}
 
 const STATUS_STYLES = {
   new:          "bg-blue-50 text-blue-700 border-blue-200",
@@ -63,13 +19,15 @@ const STATUS_STYLES = {
   rejected:     "bg-red-50 text-red-700 border-red-200",
 };
 
-function CandidateCard({ brand }) {
+function CandidateCard({ brand, onOpenDetail }) {
   const statusStyle = STATUS_STYLES[brand.verification_status] || STATUS_STYLES.new;
+  const isActionable = brand.verification_status !== "promoted" && brand.verification_status !== "rejected";
+
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-3 flex flex-col">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-syne text-base font-bold text-foreground">{brand.name}</h3>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-syne text-base font-bold text-foreground truncate">{brand.name}</h3>
           {(brand.city_or_region || brand.country) && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {[brand.city_or_region, brand.country].filter(Boolean).join(", ")}
@@ -86,23 +44,33 @@ function CandidateCard({ brand }) {
           href={brand.website.startsWith("http") ? brand.website : `https://${brand.website}`}
           target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+          onClick={e => e.stopPropagation()}
         >
-          <Globe size={11} /> {brand.website}
+          <Globe size={11} /> {brand.normalized_domain || brand.website}
         </a>
       )}
 
       {brand.sustainability_claims_raw?.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {brand.sustainability_claims_raw.slice(0, 4).map((claim, i) => (
+          {brand.sustainability_claims_raw.slice(0, 3).map((claim, i) => (
             <span key={i} className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{claim}</span>
           ))}
         </div>
       )}
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border">
+      <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border mt-auto">
         <span>Source: {brand.discovery_source || "unknown"}</span>
         {brand.confidence_level && <span className="font-medium">{brand.confidence_level} confidence</span>}
       </div>
+
+      {/* Action row */}
+      <button
+        onClick={() => onOpenDetail(brand)}
+        className="w-full flex items-center justify-center gap-1.5 py-2 bg-muted hover:bg-secondary text-foreground rounded-xl text-xs font-medium transition-colors"
+      >
+        {isActionable ? "Review & manage" : "View details"}
+        <ChevronRight size={12} />
+      </button>
     </div>
   );
 }
@@ -184,6 +152,7 @@ export default function Discover() {
   const [suggestions, setSuggestions]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [discovering, setDiscovering] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState(null);
 
   // Discovery form state
   const [discoverQuery, setDiscoverQuery]     = useState("thin puffer jacket");
@@ -224,6 +193,25 @@ export default function Discover() {
     } finally {
       setDiscovering(false);
       setShowForm(false);
+    }
+  };
+
+  const handleOpenDetail = (brand) => {
+    setSelectedBrand(brand);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedBrand(null);
+  };
+
+  const handleRefreshAfterAction = async () => {
+    await loadData();
+    // Refresh the selected brand data if still open
+    if (selectedBrand) {
+      // Re-fetch the updated brand
+      base44.entities.CandidateBrand.filter({ id: selectedBrand.id })
+        .then(updated => { if (updated?.[0]) setSelectedBrand(updated[0]); })
+        .catch(() => {});
     }
   };
 
@@ -365,11 +353,27 @@ export default function Discover() {
               ? currentItems.map(s => <SuggestionCard key={s.id} suggestion={s} />)
               : activeTab === "published"
               ? currentItems.map(r => <PublishedCard key={r.id} report={r} />)
-              : currentItems.map(b => <CandidateCard key={b.id} brand={b} />)
+              : currentItems.map(b => (
+                  <CandidateCard
+                    key={b.id}
+                    brand={b}
+                    onOpenDetail={handleOpenDetail}
+                  />
+                ))
             }
           </div>
         )}
       </div>
+
+      {/* Candidate detail panel */}
+      {selectedBrand && (
+        <CandidateDetailPanel
+          brand={selectedBrand}
+          onClose={handleCloseDetail}
+          onRefresh={handleRefreshAfterAction}
+        />
+      )}
+
       <div className="mobile-bottom-spacer md:hidden" />
     </div>
   );

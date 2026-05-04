@@ -8,6 +8,10 @@
     "website": {
       "type": "string"
     },
+    "normalized_domain": {
+      "type": "string",
+      "description": "Normalized domain extracted from website (no protocol, www, trailing slash, or paths) \u2014 used for deduplication"
+    },
     "instagram_handle": {
       "type": "string"
     },

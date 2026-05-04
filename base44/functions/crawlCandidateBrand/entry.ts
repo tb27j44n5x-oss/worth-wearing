@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Balanced evidence path selection — pick from each category so all evidence types are covered.
-// We attempt all of these (~27 paths) rather than slicing the first N.
+// Evidence path groups — balanced selection across all evidence categories
 const EVIDENCE_PATH_GROUPS = {
   about:          ['', '/about', '/our-story', '/story', '/om-oss', '/om-os'],
   sustainability: ['/sustainability', '/impact', '/baerekraft', '/bærekraft', '/hållbarhet', '/bæredygtighed'],
@@ -10,7 +9,13 @@ const EVIDENCE_PATH_GROUPS = {
   repair:         ['/repair', '/reparasjon', '/reparation', '/care', '/warranty', '/garanti', '/vedlikehold'],
 };
 
-// Build balanced path list: all paths from every group, deduplicated
+// Keywords that indicate a sitemap URL is relevant for sustainability research
+const SITEMAP_KEYWORDS = [
+  'about', 'story', 'sustainability', 'impact', 'bærekraft', 'baerekraft',
+  'materialer', 'materials', 'production', 'produksjon', 'repair', 'reparasjon',
+  'care', 'warranty', 'garanti', 'transparent', 'ethics', 'factory', 'supplier',
+];
+
 function buildEvidencePaths() {
   const paths = [];
   const seen = new Set();
@@ -19,9 +24,10 @@ function buildEvidencePaths() {
       if (!seen.has(p)) { seen.add(p); paths.push(p); }
     }
   }
-  return paths; // ~27 paths, all evidence categories guaranteed
+  return paths;
 }
 
+// Method A: Tavily Extract
 async function tavilyExtract(url, apiKey) {
   const res = await fetch('https://api.tavily.com/extract', {
     method: 'POST',
@@ -29,60 +35,153 @@ async function tavilyExtract(url, apiKey) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      urls: [url],
-      include_raw_content: false,
-    }),
+    body: JSON.stringify({ urls: [url], include_raw_content: false }),
   });
-  if (!res.ok) {
-    return { url, error: `Tavily returned ${res.status}` };
-  }
+  if (!res.ok) return { url, method: 'tavily', success: false, error: `Tavily returned ${res.status}` };
   const data = await res.json();
   const content = data.results?.[0]?.content || null;
-  if (!content) return { url, error: 'Empty content returned' };
-  return { url, content };
+  if (!content) return { url, method: 'tavily', success: false, error: 'Empty content returned' };
+  return { url, method: 'tavily', success: true, content, content_length: content.length };
 }
 
-async function tavilyCrawl(baseUrl, paths, apiKey) {
-  const urlsToTry = paths.map(p => {
-    const base = baseUrl.replace(/\/$/, '');
-    return p ? `${base}${p}` : base;
-  });
+// Method B: Direct fetch fallback
+async function directFetch(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; WorthWearing/1.0; +https://worthwearing.no)',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en,no;q=0.9',
+      },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return { url, method: 'direct_fetch', success: false, error: `HTTP ${res.status}` };
+    const html = await res.text();
+    // Strip HTML tags to get readable text
+    const text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (text.length < 100) return { url, method: 'direct_fetch', success: false, error: 'Content too short after parsing' };
+    const content = text.substring(0, 3000);
+    return { url, method: 'direct_fetch', success: true, content, content_length: content.length };
+  } catch (err) {
+    clearTimeout(timeout);
+    return { url, method: 'direct_fetch', success: false, error: err.message };
+  }
+}
 
-  const results = await Promise.allSettled(urlsToTry.map(u => tavilyExtract(u, apiKey)));
-  const contents = [];
-  const failedPages = [];
+// Method C: Sitemap discovery
+async function discoverFromSitemap(baseUrl) {
+  const sitemapUrls = [
+    `${baseUrl}/sitemap.xml`,
+    `${baseUrl}/sitemap_index.xml`,
+    `${baseUrl}/robots.txt`,
+  ];
 
-  for (const r of results) {
-    if (r.status === 'fulfilled') {
-      if (r.value.content) {
-        contents.push({ url: r.value.url, content: r.value.content.substring(0, 2000) });
+  let foundSitemapUrls = [];
+  let sitemapFound = false;
+
+  for (const sitemapUrl of sitemapUrls) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(sitemapUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WorthWearing/1.0)' },
+      });
+      clearTimeout(timeout);
+      if (!res.ok) continue;
+      const text = await res.text();
+
+      if (sitemapUrl.endsWith('robots.txt')) {
+        // Parse Sitemap: lines from robots.txt
+        const sitemapLines = text.split('\n')
+          .filter(line => line.toLowerCase().startsWith('sitemap:'))
+          .map(line => line.replace(/^sitemap:\s*/i, '').trim());
+        foundSitemapUrls.push(...sitemapLines);
+        if (sitemapLines.length > 0) sitemapFound = true;
       } else {
-        failedPages.push(`${r.value.url}: ${r.value.error}`);
+        // Parse XML sitemap — extract <loc> entries
+        const locMatches = text.match(/<loc>(.*?)<\/loc>/gi) || [];
+        const urls = locMatches.map(m => m.replace(/<\/?loc>/gi, '').trim());
+        if (urls.length > 0) {
+          sitemapFound = true;
+          // If it's a sitemap index, add sub-sitemaps; otherwise add page URLs
+          const isSitemapIndex = text.includes('<sitemapindex');
+          if (isSitemapIndex) {
+            foundSitemapUrls.push(...urls);
+          } else {
+            // Filter to relevant pages only
+            const relevant = urls.filter(u =>
+              SITEMAP_KEYWORDS.some(kw => u.toLowerCase().includes(kw))
+            );
+            return { sitemapFound: true, relevantUrls: relevant.slice(0, 15) };
+          }
+        }
       }
-    } else {
-      failedPages.push(`Unknown URL: ${r.reason?.message || 'unknown error'}`);
+    } catch (_) {
+      // continue
     }
   }
 
-  return { contents, failedPages };
+  // If we found sub-sitemaps, fetch one and extract URLs
+  for (const subSitemap of foundSitemapUrls.slice(0, 3)) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(subSitemap, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WorthWearing/1.0)' },
+      });
+      clearTimeout(timeout);
+      if (!res.ok) continue;
+      const text = await res.text();
+      const locMatches = text.match(/<loc>(.*?)<\/loc>/gi) || [];
+      const urls = locMatches.map(m => m.replace(/<\/?loc>/gi, '').trim());
+      const relevant = urls.filter(u =>
+        SITEMAP_KEYWORDS.some(kw => u.toLowerCase().includes(kw))
+      );
+      if (relevant.length > 0) {
+        return { sitemapFound: true, relevantUrls: relevant.slice(0, 15) };
+      }
+    } catch (_) {
+      // continue
+    }
+  }
+
+  return { sitemapFound, relevantUrls: [] };
+}
+
+// Try a single URL with all fallback methods: Tavily → direct fetch
+async function extractWithFallback(url, tavilyApiKey) {
+  // Method A: Tavily
+  const tavilyResult = await tavilyExtract(url, tavilyApiKey);
+  if (tavilyResult.success) return tavilyResult;
+
+  // Method B: Direct fetch
+  const fetchResult = await directFetch(url);
+  return fetchResult;
 }
 
 Deno.serve(async (req) => {
   const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
   if (!TAVILY_API_KEY) {
-    return Response.json({ error: 'TAVILY_API_KEY secret is missing. Please set it in the platform secrets.' }, { status: 500 });
+    return Response.json({ error: 'TAVILY_API_KEY secret is missing.' }, { status: 500 });
   }
 
   const base44 = createClientFromRequest(req);
-
   const { candidate_brand_id } = await req.json();
 
   if (!candidate_brand_id) {
     return Response.json({ error: 'candidate_brand_id is required' }, { status: 400 });
   }
 
-  // Fetch the candidate brand
   const candidates = await base44.asServiceRole.entities.CandidateBrand.filter({ id: candidate_brand_id }).catch(() => []);
   const candidate = candidates[0];
 
@@ -99,26 +198,119 @@ Deno.serve(async (req) => {
   }
 
   const baseUrl = candidate.website.startsWith('http') ? candidate.website : `https://${candidate.website}`;
+  const now = new Date().toISOString();
 
-  // Crawl key pages — balanced selection across all evidence categories
-  const { contents: pages, failedPages } = await tavilyCrawl(baseUrl, buildEvidencePaths(), TAVILY_API_KEY);
+  // ── Phase 1: Tavily + direct fetch for all evidence paths ───────────────────
+  const evidencePaths = buildEvidencePaths();
+  const urlsToTry = evidencePaths.map(p => {
+    const base = baseUrl.replace(/\/$/, '');
+    return p ? `${base}${p}` : base;
+  });
 
-  if (pages.length === 0) {
-    const failNote = failedPages.length > 0
-      ? `Crawl failed. Pages attempted:\n${failedPages.join('\n')}`
-      : 'Crawl returned no content — site may be blocked or unavailable.';
+  // Batch: Tavily first for all URLs, then direct fetch for failures
+  const tavilyResults = await Promise.allSettled(
+    urlsToTry.map(u => tavilyExtract(u, TAVILY_API_KEY))
+  );
+
+  const crawlAttempts = []; // All attempt records
+  const successPages = [];  // Pages with extracted content
+  const tavilyFailedUrls = []; // URLs that need direct fetch fallback
+
+  for (const r of tavilyResults) {
+    const result = r.status === 'fulfilled' ? r.value : { url: 'unknown', method: 'tavily', success: false, error: r.reason?.message };
+    crawlAttempts.push({ ...result, attempted_at: now });
+    if (result.success) {
+      successPages.push({ url: result.url, content: result.content.substring(0, 2000), method: 'tavily' });
+    } else {
+      tavilyFailedUrls.push(result.url);
+    }
+  }
+
+  // ── Phase 2: Direct fetch fallback for Tavily failures ──────────────────────
+  const directFetchResults = await Promise.allSettled(
+    tavilyFailedUrls.map(u => directFetch(u))
+  );
+
+  let directFetchHelped = 0;
+  for (const r of directFetchResults) {
+    const result = r.status === 'fulfilled' ? r.value : { url: 'unknown', method: 'direct_fetch', success: false, error: r.reason?.message };
+    crawlAttempts.push({ ...result, attempted_at: now });
+    if (result.success) {
+      successPages.push({ url: result.url, content: result.content.substring(0, 2000), method: 'direct_fetch' });
+      directFetchHelped++;
+    }
+  }
+
+  // ── Phase 3: Sitemap discovery if still no content ───────────────────────────
+  let sitemapFound = false;
+  let sitemapUrls = [];
+  if (successPages.length === 0) {
+    const sitemapResult = await discoverFromSitemap(baseUrl);
+    sitemapFound = sitemapResult.sitemapFound;
+    sitemapUrls = sitemapResult.relevantUrls;
+
+    if (sitemapUrls.length > 0) {
+      const sitemapFetchResults = await Promise.allSettled(
+        sitemapUrls.map(u => extractWithFallback(u, TAVILY_API_KEY))
+      );
+      for (const r of sitemapFetchResults) {
+        const result = r.status === 'fulfilled' ? r.value : { url: 'unknown', method: 'sitemap', success: false, error: r.reason?.message };
+        const attempt = { ...result, method: 'sitemap', attempted_at: now };
+        crawlAttempts.push(attempt);
+        if (result.success) {
+          successPages.push({ url: result.url, content: result.content.substring(0, 2000), method: 'sitemap' });
+        }
+      }
+    }
+  }
+
+  // ── Save CrawlAttempt records (async, non-blocking) ──────────────────────────
+  Promise.allSettled(
+    crawlAttempts.slice(0, 50).map(a =>
+      base44.asServiceRole.entities.CrawlAttempt.create({
+        candidate_brand_id,
+        url: a.url || 'unknown',
+        method: a.method || 'tavily',
+        success: a.success || false,
+        content_length: a.content_length || 0,
+        error: a.error || null,
+        attempted_at: a.attempted_at,
+      }).catch(() => null)
+    )
+  );
+
+  // ── Handle total failure ──────────────────────────────────────────────────────
+  if (successPages.length === 0) {
+    const failLines = crawlAttempts
+      .filter(a => !a.success)
+      .slice(0, 20)
+      .map(a => `[${a.method}] ${a.url}: ${a.error}`);
+
+    const failNote = [
+      `Crawl failed — 0/${crawlAttempts.length} pages extracted.`,
+      sitemapFound ? `Sitemap found but no relevant pages could be fetched.` : `No sitemap found.`,
+      `\nAttempted pages:\n${failLines.join('\n')}`,
+    ].join('\n');
 
     await base44.asServiceRole.entities.CandidateBrand.update(candidate_brand_id, {
       verification_status: 'needs_review',
-      last_crawled_at: new Date().toISOString(),
+      last_crawled_at: now,
       admin_notes: failNote,
     });
-    return Response.json({ success: false, reason: 'No pages could be crawled', failed_pages: failedPages });
+    return Response.json({
+      success: false,
+      reason: 'No pages could be crawled — try manual evidence entry',
+      pages_attempted: crawlAttempts.length,
+      sitemap_found: sitemapFound,
+      direct_fetch_helped: directFetchHelped,
+    });
   }
 
-  const combinedContent = pages.map(p => `--- PAGE: ${p.url} ---\n${p.content}`).join('\n\n');
+  // ── LLM extraction ────────────────────────────────────────────────────────────
+  const combinedContent = successPages
+    .map(p => `--- PAGE [${p.method}]: ${p.url} ---\n${p.content}`)
+    .join('\n\n');
 
-  // Use LLM to extract signals
   let extraction = null;
   try {
     extraction = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -141,7 +333,6 @@ IMPORTANT RULES:
 - Reward honest limitations: admitting gaps is MORE transparent than having no gaps
 - Flag vague claims: "sustainable", "eco-friendly", "we care about the planet" with no specifics
 - Do NOT penalise a brand just for lacking formal certifications
-- Separate "we don't know yet" from "evidence of bad practice"
 
 Also assess:
 - production_countries: where does production happen?
@@ -182,11 +373,10 @@ Also assess:
     return Response.json({ error: 'LLM extraction failed', detail: err.message }, { status: 500 });
   }
 
-  const now = new Date().toISOString();
   const signals = extraction?.signals || [];
 
   // Save BrandSignal records
-  const signalSaves = signals.map(s =>
+  await Promise.allSettled(signals.map(s =>
     base44.asServiceRole.entities.BrandSignal.create({
       candidate_brand_id,
       brand_name: candidate.name,
@@ -200,25 +390,40 @@ Also assess:
       needs_manual_review: s.needs_manual_review || false,
       review_note: s.review_note || '',
     }).catch(() => null)
-  );
-  await Promise.allSettled(signalSaves);
+  ));
 
   const newStatus = signals.some(s => s.needs_manual_review) ? 'needs_review' : 'crawled';
 
-  // Build per-category coverage summary for admin_notes
-  const crawledUrls = new Set(pages.map(p => {
+  // Build detailed admin_notes
+  const crawledUrlPaths = new Set(successPages.map(p => {
     try { return new URL(p.url).pathname; } catch { return p.url; }
   }));
   const coverageSummary = Object.entries(EVIDENCE_PATH_GROUPS).map(([group, groupPaths]) => {
-    const covered = groupPaths.filter(p => crawledUrls.has(p) || crawledUrls.has(p + '/'));
+    const covered = groupPaths.filter(p => crawledUrlPaths.has(p) || crawledUrlPaths.has(p + '/'));
     return `${group}: ${covered.length}/${groupPaths.length} pages reached`;
   }).join('\n');
 
+  const methodBreakdown = successPages.reduce((acc, p) => {
+    acc[p.method] = (acc[p.method] || 0) + 1;
+    return acc;
+  }, {});
+
   const adminNotes = [
     extraction?.overall_transparency_notes || '',
-    `\n\nEvidence coverage:\n${coverageSummary}`,
-    failedPages.length > 0 ? `\n\nFailed pages (${failedPages.length}):\n${failedPages.slice(0, 20).join('\n')}` : '',
-  ].join('').trim();
+    `\n\nCrawl summary:`,
+    `• Pages attempted: ${crawlAttempts.length}`,
+    `• Pages successfully extracted: ${successPages.length}`,
+    `• Failed pages: ${crawlAttempts.length - successPages.length}`,
+    `• Sitemap found: ${sitemapFound ? 'Yes' : 'No'}`,
+    `• Direct fetch helped: ${directFetchHelped > 0 ? `Yes (${directFetchHelped} pages)` : 'No'}`,
+    Object.entries(methodBreakdown).length > 0
+      ? `• Methods used: ${Object.entries(methodBreakdown).map(([m, c]) => `${m}=${c}`).join(', ')}`
+      : '',
+    `\nEvidence coverage:\n${coverageSummary}`,
+    crawlAttempts.filter(a => !a.success).length > 0
+      ? `\nFailed pages (${crawlAttempts.filter(a => !a.success).length}):\n${crawlAttempts.filter(a => !a.success).slice(0, 15).map(a => `[${a.method}] ${a.url}: ${a.error}`).join('\n')}`
+      : '',
+  ].filter(Boolean).join('\n').trim();
 
   await base44.asServiceRole.entities.CandidateBrand.update(candidate_brand_id, {
     verification_status: newStatus,
@@ -233,8 +438,10 @@ Also assess:
     success: true,
     brand_name: candidate.name,
     signals_extracted: signals.length,
-    pages_crawled: pages.length,
-    failed_pages: failedPages,
+    pages_crawled: successPages.length,
+    pages_attempted: crawlAttempts.length,
+    sitemap_found: sitemapFound,
+    direct_fetch_helped: directFetchHelped,
     verification_status: newStatus,
     greenwashing_risk: extraction?.greenwashing_risk,
     has_repair_service: extraction?.has_repair_service,

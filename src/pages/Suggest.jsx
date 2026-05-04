@@ -73,10 +73,20 @@ export default function Suggest() {
         ai_verification_status: "pending",
       }).catch(() => null);
 
+      // Compute normalized_domain for deduplication
+      const normalizeDomain = (url) => {
+        if (!url) return null;
+        try {
+          const withProto = url.startsWith('http') ? url : `https://${url}`;
+          return new URL(withProto).hostname.replace(/^www\./, '').toLowerCase();
+        } catch { return null; }
+      };
+
       // Create CandidateBrand immediately so it shows up in Discover
       await base44.entities.CandidateBrand.create({
         name: form.brand_name.trim(),
         website: form.submitted_source_url || "",
+        normalized_domain: normalizeDomain(form.submitted_source_url),
         category_tags: form.category ? [form.category] : [],
         discovery_source: "user_suggestion",
         source_platform: "user_suggestion",

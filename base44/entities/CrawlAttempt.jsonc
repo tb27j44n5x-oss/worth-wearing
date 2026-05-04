@@ -1,0 +1,40 @@
+{
+  "name": "CrawlAttempt",
+  "type": "object",
+  "properties": {
+    "candidate_brand_id": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "tavily",
+        "direct_fetch",
+        "sitemap"
+      ],
+      "description": "Which extraction method was used"
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "content_length": {
+      "type": "number",
+      "description": "Length of extracted content in characters"
+    },
+    "error": {
+      "type": "string"
+    },
+    "attempted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "candidate_brand_id",
+    "url",
+    "method"
+  ]
+}

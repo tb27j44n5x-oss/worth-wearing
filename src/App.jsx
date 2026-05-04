@@ -10,7 +10,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import SearchPage from './pages/SearchPage';
 import RecommendationResult from './pages/RecommendationResult';
 import Suggest from './pages/Suggest';
-import Discover from './pages/Discover.jsx';
+import Discover from './pages/Discover';
 import Admin from './pages/Admin';
 import BottomNav from './components/BottomNav';
 
